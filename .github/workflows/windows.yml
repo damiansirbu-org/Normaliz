@@ -1,0 +1,56 @@
+name: Windows build (MSYS2/MinGW64)
+
+# Upstream ci.yml builds only on Ubuntu/macOS; the Windows release binary is
+# produced manually under MSYS2 (see INSTALL, "Compilation for MS Windows").
+# This workflow automates that native Windows build on a windows-latest runner.
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  windows-mingw64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      # MINGW64 is required: source/Makefile.configuration keys its static
+      # Windows build on MSYSTEM == MINGW64 (not UCRT64).
+      - name: Setup MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-gmp
+
+      # install_normaliz.sh does this for the msys branch before Makefile.classic.
+      - name: Provide generated headers for Makefile.classic
+        run: |
+          cp install_scripts_opt/header_files_for_Makefile.classic/version.h source/libnormaliz/
+          cp install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h source/libnormaliz/
+
+      # NAKED=yes => only GMP, no optional libraries. Minimal green build first;
+      # flint/mpfr (pacman) and nauty/cocoa/e-antic (install_scripts_opt) come later.
+      - name: Build static normaliz.exe (GMP only)
+        run: |
+          cd source
+          make -f Makefile.classic NAKED=yes -j$(nproc)
+
+      - name: Smoke test (2cone example)
+        run: |
+          cd source
+          ./normaliz.exe ../example/2cone
+          cat ../example/2cone.out
+
+      - name: Upload normaliz.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: normaliz-windows-x86_64
+          path: source/normaliz.exe
