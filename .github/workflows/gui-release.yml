@@ -152,14 +152,15 @@ jobs:
           echo "CPATH=$(brew --prefix)/include" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
-      - name: Build libnormaliz (shared)
+      - name: Build libnormaliz.a (static)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          # macOS: no fully static libc (NMZ_SHARED=yes), and Apple clang has no
-          # -fopenmp (OPENMP=no).
-          make -f Makefile.classic NAKED=yes NMZ_SHARED=yes OPENMP=no -j$(sysctl -n hw.ncpu)
+          # Build only the static archive (the 'lib' target). This avoids both the
+          # -static executable link and the GNU-ld '-rpath=' flags of the shared
+          # build, which Apple's ld rejects. OPENMP=no: Apple clang has no -fopenmp.
+          make -f Makefile.classic NAKED=yes OPENMP=no lib -j$(sysctl -n hw.ncpu)
 
       - name: Build GUI
         run: |
