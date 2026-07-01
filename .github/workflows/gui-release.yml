@@ -1,0 +1,172 @@
+name: GUI release (Windows installer + Linux AppImage)
+
+# Builds libnormaliz + the Qt GUI (gui/) and packages a native installer per OS:
+#   Windows -> NSIS setup.exe   (bundles Qt/GMP DLLs via windeployqt)
+#   Linux   -> AppImage         (bundles Qt/GMP via linuxdeploy)
+# Artifacts are uploaded; download them from the workflow run.
+
+on:
+  push:
+    branches: [ gui, windows-ci ]
+  workflow_dispatch:
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-gmp
+            mingw-w64-x86_64-mpfr
+            mingw-w64-x86_64-flint
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-nsis
+
+      - name: Build libnormaliz.a
+        run: |
+          cd source
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
+          mingw32-make -f Makefile.classic NAKED=yes -j$(nproc)
+
+      - name: Build GUI
+        run: |
+          cd gui
+          cmake -G Ninja -B build -DCMAKE_PREFIX_PATH=/mingw64
+          cmake --build build
+
+      - name: Package (windeployqt + strip)
+        run: |
+          cd gui/build
+          windeployqt.exe --no-translations --no-compiler-runtime normaliz-gui.exe
+          mkdir -p ../dist
+          cp normaliz-gui.exe ../dist/
+          cp *.dll ../dist/ 2>/dev/null || true
+          for d in platforms styles tls imageformats iconengines generic networkinformation; do
+            [ -d "$d" ] && cp -r "$d" ../dist/
+          done
+          ldd normaliz-gui.exe | grep -i '/mingw64/bin' | awk '{print $3}' | while read -r dll; do
+            cp -n "$dll" ../dist/ 2>/dev/null || true
+          done
+          strip ../dist/normaliz-gui.exe
+
+      - name: Build installer (NSIS)
+        run: |
+          cd gui/installer
+          makensis normaliz-gui.nsi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: normaliz-gui-windows-setup
+          path: gui/installer/normaliz-gui-*-setup.exe
+
+  linux-appimage:
+    runs-on: ubuntu-latest
+    env:
+      APPIMAGE_EXTRACT_AND_RUN: 1   # CI has no FUSE
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build file wget imagemagick \
+            qt6-base-dev libgl1-mesa-dev \
+            libgmp-dev libgmpxx4ldbl libmpfr-dev libflint-dev
+
+      - name: Build libnormaliz.a
+        run: |
+          cd source
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
+          make -f Makefile.classic NAKED=yes -j$(nproc)
+
+      - name: Build GUI
+        run: |
+          cd gui
+          cmake -G Ninja -B build
+          cmake --build build
+
+      - name: Assemble AppDir
+        run: |
+          cd gui
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/normaliz-gui AppDir/usr/bin/
+          cat > AppDir/usr/share/applications/normaliz-gui.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Normaliz GUI
+          Exec=normaliz-gui
+          Icon=normaliz-gui
+          Categories=Science;Math;
+          Terminal=false
+          EOF
+          convert -size 256x256 xc:'#2d6cdf' \
+            AppDir/usr/share/icons/hicolor/256x256/apps/normaliz-gui.png
+
+      - name: Build AppImage (linuxdeploy + qt plugin)
+        run: |
+          cd gui
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+          export QMAKE=/usr/lib/qt6/bin/qmake6
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --desktop-file AppDir/usr/share/applications/normaliz-gui.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/normaliz-gui.png \
+            --plugin qt \
+            --output appimage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: normaliz-gui-linux-appimage
+          path: gui/*.AppImage
+
+  macos-dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install qt gmp mpfr flint cmake ninja
+
+      - name: Build libnormaliz (shared)
+        run: |
+          cd source
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
+          cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
+          # macOS has no fully static libc, so build libnormaliz shared.
+          make -f Makefile.classic NAKED=yes NMZ_SHARED=yes -j$(sysctl -n hw.ncpu)
+
+      - name: Build GUI
+        run: |
+          cd gui
+          cmake -G Ninja -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+          cmake --build build
+
+      - name: Package (.dmg via macdeployqt)
+        run: |
+          cd gui/build
+          "$(brew --prefix qt)/bin/macdeployqt" normaliz-gui.app -dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: normaliz-gui-macos-dmg
+          path: gui/build/*.dmg

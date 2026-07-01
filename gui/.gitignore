@@ -1,0 +1,9 @@
+build/
+dist/
+AppDir/
+*.o
+*.exe
+*-setup.exe
+*.AppImage
+*.dmg
+linuxdeploy*.AppImage
