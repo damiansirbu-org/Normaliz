@@ -145,7 +145,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: brew install qt gmp mpfr flint cmake ninja
+        run: |
+          brew install qt gmp mpfr flint cmake ninja
+          # Homebrew (Apple Silicon: /opt/homebrew) is not on the default compiler
+          # search path; expose its headers/libs (gmp, mpfr, flint) to all steps.
+          echo "CPATH=$(brew --prefix)/include" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
       - name: Build libnormaliz (shared)
         run: |
