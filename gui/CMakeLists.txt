@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
-find_package(OpenMP REQUIRED)
+# Optional: libnormaliz uses OpenMP on Windows/Linux, but on macOS (Apple clang
+# has no -fopenmp) it is built without it, so the GUI must not require it either.
+find_package(OpenMP)
 
 # This GUI lives inside the Normaliz tree (Normaliz/gui). The engine headers and
 # the static libnormaliz.a are the sibling source/ directory.
@@ -39,5 +41,8 @@ target_link_libraries(normaliz-gui PRIVATE
     "${NORMALIZ_LIB}"
     gmpxx
     gmp
-    OpenMP::OpenMP_CXX
 )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(normaliz-gui PRIVATE OpenMP::OpenMP_CXX)
+endif()

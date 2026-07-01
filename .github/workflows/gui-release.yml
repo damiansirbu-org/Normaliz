@@ -152,8 +152,9 @@ jobs:
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          # macOS has no fully static libc, so build libnormaliz shared.
-          make -f Makefile.classic NAKED=yes NMZ_SHARED=yes -j$(sysctl -n hw.ncpu)
+          # macOS: no fully static libc (NMZ_SHARED=yes), and Apple clang has no
+          # -fopenmp (OPENMP=no).
+          make -f Makefile.classic NAKED=yes NMZ_SHARED=yes OPENMP=no -j$(sysctl -n hw.ncpu)
 
       - name: Build GUI
         run: |
