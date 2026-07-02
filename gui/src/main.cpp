@@ -20,15 +20,51 @@ QGroupBox {
     background: #ffffff;
     border: 1px solid #d0d4d9;
     border-radius: 3px;
-    margin-top: 14px;
-    padding: 12px;
+    margin-top: 18px;
+    padding: 14px 12px 12px 12px;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 4px;
+    subcontrol-position: top left;
+    left: 12px;
+    padding: 1px 6px;
+    background-color: #f4f5f7;
     color: #24292f;
-    font-weight: 600;
+    font-weight: 700;
+}
+QMenuBar {
+    background: #f4f5f7;
+    color: #24292f;
+    padding: 2px 4px;
+}
+QMenuBar::item {
+    background: transparent;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+QMenuBar::item:selected {
+    background: #e2e5e9;
+}
+QMenuBar::item:pressed {
+    background: #d7dbe0;
+}
+QMenu {
+    background: #ffffff;
+    border: 1px solid #d0d4d9;
+    padding: 4px;
+}
+QMenu::item {
+    padding: 6px 26px 6px 12px;
+    border-radius: 3px;
+}
+QMenu::item:selected {
+    background: #2f363d;
+    color: #ffffff;
+}
+QMenu::separator {
+    height: 1px;
+    background: #e2e5e9;
+    margin: 4px 6px;
 }
 QPlainTextEdit {
     background: #ffffff;
