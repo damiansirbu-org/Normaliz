@@ -46,8 +46,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     gLay->addWidget(cbSupport_);
 
     // Backend selector. Local (embedded libnormaliz) is the default and the only
-    // implemented mode; Remote (a distributed backend) is shown but disabled -
-    // the architecture is in place, the implementation comes later.
+    // implemented mode; Cloud (the distributed remote backend) is shown but
+    // disabled - the architecture is in place, the implementation is WIP.
     // See gui/doc/architecture.md, section "Shared core (desktop and web)".
     auto* backendLabel = new QLabel("Backend");
     backendLabel->setObjectName("sectionLabel");
@@ -56,9 +56,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     backendLocal_ = new QRadioButton("Local");
     backendLocal_->setChecked(true);
     backendLocal_->setToolTip("Compute in this application (embedded engine)");
-    backendRemote_ = new QRadioButton("Remote (coming soon)");
+    backendRemote_ = new QRadioButton("Cloud (WIP)");
     backendRemote_->setEnabled(false);
-    backendRemote_->setToolTip("Planned distributed backend - not yet available");
+    backendRemote_->setToolTip("Distributed cloud backend - work in progress");
     gLay->addWidget(backendLocal_);
     gLay->addWidget(backendRemote_);
 
