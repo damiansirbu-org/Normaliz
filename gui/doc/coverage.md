@@ -31,7 +31,7 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 | jNormaliz | Status | Notes |
 |---|---|---|
 | Run | [x] | Compute button, in-process |
-| Stop | [ ] | cancel via nmz_interrupted |
+| Stop | [x] | cancels via nmz_interrupted (InterruptException) |
 
 ## Toolbar
 
@@ -64,9 +64,9 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 
 | jNormaliz | Status | Notes |
 |---|---|---|
-| Elapsed time | [ ] | timer around compute |
+| Elapsed time | [x] | timer in the status bar |
 | Physical memory gauge | [ ] | process memory |
-| Running indicator | [~] | status text "Computing..."; no icon/gauge |
+| Running indicator | [x] | Computing/Stopping/Ready status + Stop button |
 
 ## Help menu
 
@@ -109,10 +109,10 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 ## Summary
 
-Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run, most of the Help
-menu, both current tabs, eight computation goals. Remaining for 100% parity:
-Close/Print, Stop, toolbar selectors (algorithm/mode/precision), Console and
-Options tabs, the status line (timer/memory), Help (this doc + math background),
-and more computation goals. Beyond jNormaliz: in-process engine, installers and
-the Local backend are done; visualization, observability, autotuning and
-provenance are the research pillars.
+Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run and Stop, most of
+the Help menu, both current tabs, eight computation goals, elapsed-time status.
+Remaining for 100% parity: Close/Print, toolbar selectors
+(algorithm/mode/precision), Console and Options tabs, the memory gauge, Help
+(this doc + math background), and more computation goals. Beyond jNormaliz:
+in-process engine, installers and the Local backend are done; visualization,
+observability, autotuning and provenance are the research pillars.

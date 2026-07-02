@@ -25,6 +25,7 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QTimer>
 #include <QtConcurrent>
 
 #include <sstream>
@@ -34,6 +35,8 @@
 #include "libnormaliz/cone.h"
 #include "libnormaliz/input.h"
 #include "libnormaliz/HilbertSeries.h"
+#include "libnormaliz/normaliz_exception.h"
+#include "libnormaliz/general.h"
 
 using namespace libnormaliz;
 
@@ -94,6 +97,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     compute_ = new QPushButton("Compute");
     compute_->setObjectName("compute");
     gLay->addWidget(compute_);
+    stop_ = new QPushButton("Stop");
+    stop_->setEnabled(false);
+    gLay->addWidget(stop_);
     top->addWidget(goalsBox, 2);
 
     root->addLayout(top, 3);
@@ -107,12 +113,22 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     setCentralWidget(central);
     buildMenu();
+
+    elapsedLabel_ = new QLabel("Elapsed: 0.0s");
+    statusBar()->addPermanentWidget(elapsedLabel_);
     statusBar()->showMessage("Ready");
+    tick_ = new QTimer(this);
+    tick_->setInterval(100);
+
     input_->document()->setModified(false);   // the preloaded example is not "unsaved"
     updateTitle();
 
     connect(compute_, &QPushButton::clicked, this, &MainWindow::startCompute);
+    connect(stop_, &QPushButton::clicked, this, &MainWindow::stopCompute);
     connect(&watcher_, &QFutureWatcher<Result>::finished, this, &MainWindow::computeFinished);
+    connect(tick_, &QTimer::timeout, this, [this] {
+        elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
+    });
     connect(input_->document(), &QTextDocument::modificationChanged,
             this, [this](bool) { updateTitle(); });
 }
@@ -310,6 +326,9 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
 
         r.ok = true;
         r.text = oss.str();
+    } catch (const InterruptException&) {
+        r.stopped = true;
+        r.text = "Computation stopped.";
     } catch (const std::exception& e) {
         r.text = std::string("Error: ") + e.what();
     } catch (...) {
@@ -324,15 +343,31 @@ void MainWindow::startCompute() {
              cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked() };
     // Capture the editor text on the GUI thread; the worker must not touch widgets.
     std::string inputText = input_->toPlainText().toStdString();
+    nmz_interrupted = 0;   // clear any stale interrupt request from a previous Stop
     compute_->setEnabled(false);
+    stop_->setEnabled(true);
     statusBar()->showMessage("Computing...");
     output_->setPlainText("");
+    elapsedLabel_->setText("Elapsed: 0.0s");
+    elapsed_.start();
+    tick_->start();
     watcher_.setFuture(QtConcurrent::run(&MainWindow::runCompute, inputText, g));
 }
 
+void MainWindow::stopCompute() {
+    // Request interruption. libnormaliz checks nmz_interrupted inside its loops
+    // and throws InterruptException, which the worker catches.
+    nmz_interrupted = 1;
+    stop_->setEnabled(false);
+    statusBar()->showMessage("Stopping...");
+}
+
 void MainWindow::computeFinished() {
+    tick_->stop();
+    elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
     const Result r = watcher_.result();
     output_->setPlainText(QString::fromStdString(r.text));
-    statusBar()->showMessage(r.ok ? "Ready" : "Error");
+    statusBar()->showMessage(r.ok ? "Ready" : (r.stopped ? "Stopped" : "Error"));
     compute_->setEnabled(true);
+    stop_->setEnabled(false);
 }

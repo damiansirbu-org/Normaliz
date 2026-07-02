@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QFutureWatcher>
 #include <QString>
+#include <QElapsedTimer>
 #include <string>
 
 class QPlainTextEdit;
@@ -10,6 +11,8 @@ class QPushButton;
 class QCheckBox;
 class QRadioButton;
 class QCloseEvent;
+class QLabel;
+class QTimer;
 
 // Clean 3-zone layout: input (.in) editor, computation-goal selector, output,
 // plus a File menu. The computation runs off the GUI thread (QtConcurrent) and
@@ -24,6 +27,7 @@ protected:
 
 private slots:
     void startCompute();
+    void stopCompute();
     void computeFinished();
     void newFile();
     void openFile();
@@ -33,7 +37,7 @@ private slots:
 private:
     struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
                    bool volume; bool latpts; bool classgrp; };
-    struct Result { bool ok = false; std::string text; };
+    struct Result { bool ok = false; bool stopped = false; std::string text; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
 
@@ -44,6 +48,10 @@ private:
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;
     QPushButton* compute_;
+    QPushButton* stop_;
+    QLabel* elapsedLabel_;
+    QTimer* tick_;
+    QElapsedTimer elapsed_;
     QCheckBox* cbHilbert_;
     QCheckBox* cbExtreme_;
     QCheckBox* cbSupport_;

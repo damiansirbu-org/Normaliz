@@ -21,7 +21,9 @@ the roadmap toward a complete replacement.
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
   the distributed backend is planned; the choice is already visible in the UI.
 - Computation runs off the GUI thread (QtConcurrent); UI stays responsive,
-  Compute disabled while running, status shows Computing / Ready / Error.
+  status shows Computing / Ready / Error.
+- Stop button cancels a running computation (nmz_interrupted); status bar shows
+  elapsed time.
 - Exception-safe: `libnormaliz` errors are caught and shown as text, never crash.
 - Arbitrary-precision arithmetic (GMP `mpz_class`).
 - Neutral high-contrast theme; no console window (WIN32 subsystem).
@@ -35,8 +37,8 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
 - File: Print and Close, plus an unsaved-changes prompt on exit
   (New/Open/Save/Save As are done).
-- Run controls: Algorithm, Computational mode, Precision selectors; Stop/cancel
-  with progress (`nmz_interrupted`).
+- Run controls: Algorithm, Computational mode, Precision selectors (Stop/cancel
+  is done).
 - Console/log tab: real-time verbose engine output.
 - Output options: `.out/.gen/.inv/.typ/.cst`, triangulation, Stanley
   decomposition; thread control; font size.
