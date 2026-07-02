@@ -48,18 +48,15 @@ jobs:
           cmake -G Ninja -B build -DCMAKE_PREFIX_PATH=/mingw64
           cmake --build build
 
-      - name: Package (windeployqt + strip)
+      - name: Package (assemble dist)
         run: |
+          # Complete, error-tolerant deploy (windeployqt + recursive MinGW DLLs).
+          bash gui/scripts/win-deploy.sh gui/build/normaliz-gui.exe
           cd gui/build
-          windeployqt.exe --no-translations --no-compiler-runtime normaliz-gui.exe
           mkdir -p ../dist
-          cp normaliz-gui.exe ../dist/
-          cp *.dll ../dist/ 2>/dev/null || true
+          cp *.exe *.dll ../dist/ 2>/dev/null || true
           for d in platforms styles tls imageformats iconengines generic networkinformation; do
             [ -d "$d" ] && cp -r "$d" ../dist/
-          done
-          ldd normaliz-gui.exe | grep -i '/mingw64/bin' | awk '{print $3}' | while read -r dll; do
-            cp -n "$dll" ../dist/ 2>/dev/null || true
           done
           strip ../dist/normaliz-gui.exe
 
