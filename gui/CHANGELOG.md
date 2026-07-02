@@ -20,6 +20,9 @@ First working skeleton with cross-platform delivery.
   the input was edited (no silent data loss).
 - Computation goals: Hilbert series and multiplicity added (alongside Hilbert
   basis, extreme rays, support hyperplanes).
+- More computation goals: volume, lattice points, class group.
+- Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
+  website, manual, About).
 - Off-thread computation (QtConcurrent) with responsive UI and status line.
 - Exception-safe worker: `NormalizException` shown as text, no crash.
 - Neutral high-contrast theme; WIN32 GUI subsystem (no console window).

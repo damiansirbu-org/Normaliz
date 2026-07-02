@@ -21,10 +21,10 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 
 | jNormaliz | Status | Notes |
 |---|---|---|
-| Undo | [~] | editor built-in (Ctrl+Z); no menu item yet |
-| Cut | [~] | editor built-in; no menu item yet |
-| Copy | [~] | editor built-in; no menu item yet |
-| Paste | [~] | editor built-in; no menu item yet |
+| Undo | [x] | Edit menu; targets the input editor |
+| Cut | [x] | Edit menu; targets the input editor |
+| Copy | [x] | Edit menu; targets the input editor |
+| Paste | [x] | Edit menu; targets the input editor |
 
 ## Normaliz menu / Run
 
@@ -73,10 +73,10 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 | jNormaliz | Status | Notes |
 |---|---|---|
 | Help | [ ] | this documentation |
-| Open Normaliz manual | [ ] | open the PDF |
-| Open Normaliz website | [ ] | open the URL |
+| Open Normaliz manual | [x] | opens the online manual PDF |
+| Open Normaliz website | [x] | opens the Normaliz GitHub |
 | Mathematical background | [ ] | dialog with links |
-| About | [ ] | about box |
+| About | [x] | about box |
 
 ## Computation goals
 
@@ -89,7 +89,10 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 | Support hyperplanes | [x] | getSupportHyperplanes |
 | Hilbert series | [x] | getHilbertSeries |
 | Multiplicity | [x] | getMultiplicity |
-| Volume, lattice points, class group, rank, ... | [ ] | more ConeProperty |
+| Volume | [x] | getVolume |
+| Lattice points | [x] | getNumberLatticePoints |
+| Class group | [x] | getClassGroup |
+| Rank, embedding dim, and more | [ ] | further ConeProperty targets |
 
 ## Beyond jNormaliz (what jNormaliz did not cover)
 
@@ -106,9 +109,10 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 ## Summary
 
-Parity done: most of File (Open/New/Save/Save As/Exit), Run, both current tabs,
-five core goals. Remaining for 100% parity: Close/Print, an Edit menu, Stop,
-toolbar selectors (algorithm/mode/precision), Console and Options tabs, the
-status line (timer/memory), the Help menu, and more computation goals. Beyond
-jNormaliz: in-process engine, installers and the Local backend are done;
-visualization, observability, autotuning and provenance are the research pillars.
+Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run, most of the Help
+menu, both current tabs, eight computation goals. Remaining for 100% parity:
+Close/Print, Stop, toolbar selectors (algorithm/mode/precision), Console and
+Options tabs, the status line (timer/memory), Help (this doc + math background),
+and more computation goals. Beyond jNormaliz: in-process engine, installers and
+the Local backend are done; visualization, observability, autotuning and
+provenance are the research pillars.

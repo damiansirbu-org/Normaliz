@@ -23,6 +23,8 @@
 #include <QTextDocument>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QtConcurrent>
 
 #include <sstream>
@@ -59,11 +61,17 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     cbSupport_ = new QCheckBox("Support hyperplanes");
     cbHSeries_ = new QCheckBox("Hilbert series");
     cbMult_ = new QCheckBox("Multiplicity");
+    cbVolume_ = new QCheckBox("Volume");
+    cbLatPts_ = new QCheckBox("Lattice points");
+    cbClassGrp_ = new QCheckBox("Class group");
     gLay->addWidget(cbHilbert_);
     gLay->addWidget(cbExtreme_);
     gLay->addWidget(cbSupport_);
     gLay->addWidget(cbHSeries_);
     gLay->addWidget(cbMult_);
+    gLay->addWidget(cbVolume_);
+    gLay->addWidget(cbLatPts_);
+    gLay->addWidget(cbClassGrp_);
 
     // Backend selector. Local (embedded libnormaliz) is the default and the only
     // implemented mode; Cloud (the distributed remote backend) is shown but
@@ -122,6 +130,38 @@ void MainWindow::buildMenu() {
     fileMenu->addSeparator();
     QAction* aExit = fileMenu->addAction("E&xit", this, &QWidget::close);
     aExit->setShortcut(QKeySequence::Quit);
+
+    QMenu* editMenu = menuBar()->addMenu("&Edit");
+    QAction* aUndo = editMenu->addAction("&Undo", input_, &QPlainTextEdit::undo);
+    aUndo->setShortcut(QKeySequence::Undo);
+    QAction* aRedo = editMenu->addAction("&Redo", input_, &QPlainTextEdit::redo);
+    aRedo->setShortcut(QKeySequence::Redo);
+    editMenu->addSeparator();
+    QAction* aCut = editMenu->addAction("Cu&t", input_, &QPlainTextEdit::cut);
+    aCut->setShortcut(QKeySequence::Cut);
+    QAction* aCopy = editMenu->addAction("&Copy", input_, &QPlainTextEdit::copy);
+    aCopy->setShortcut(QKeySequence::Copy);
+    QAction* aPaste = editMenu->addAction("&Paste", input_, &QPlainTextEdit::paste);
+    aPaste->setShortcut(QKeySequence::Paste);
+    editMenu->addSeparator();
+    QAction* aSelAll = editMenu->addAction("Select &All", input_, &QPlainTextEdit::selectAll);
+    aSelAll->setShortcut(QKeySequence::SelectAll);
+
+    QMenu* helpMenu = menuBar()->addMenu("&Help");
+    helpMenu->addAction("Normaliz &website", this, [] {
+        QDesktopServices::openUrl(QUrl("https://github.com/Normaliz/Normaliz"));
+    });
+    helpMenu->addAction("Normaliz &manual", this, [] {
+        QDesktopServices::openUrl(QUrl("https://github.com/Normaliz/Normaliz/blob/master/doc/Normaliz.pdf"));
+    });
+    helpMenu->addSeparator();
+    helpMenu->addAction("&About", this, [this] {
+        QMessageBox::about(this, "About Normaliz GUI",
+            "<b>Normaliz GUI</b><br>"
+            "A desktop interface for Normaliz, built on libnormaliz.<br><br>"
+            "Normaliz by W. Bruns, B. Ichim, Ch. Soeger, U. v. d. Ohe.<br>"
+            "GPL v3.");
+    });
 }
 
 void MainWindow::updateTitle() {
@@ -231,7 +271,8 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
             readNormalizInput<mpq_class>(in, options, num_param_input, poly_param_input, number_field);
         Cone<mpz_class> cone(input);
 
-        if (!(g.hilbert || g.extreme || g.support || g.hseries || g.mult))
+        if (!(g.hilbert || g.extreme || g.support || g.hseries || g.mult
+              || g.volume || g.latpts || g.classgrp))
             g.hilbert = true;
 
         ConeProperties props;
@@ -240,6 +281,9 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         if (g.support) props.set(ConeProperty::SupportHyperplanes);
         if (g.hseries) props.set(ConeProperty::HilbertSeries);
         if (g.mult)    props.set(ConeProperty::Multiplicity);
+        if (g.volume)   props.set(ConeProperty::Volume);
+        if (g.latpts)   props.set(ConeProperty::NumberLatticePoints);
+        if (g.classgrp) props.set(ConeProperty::ClassGroup);
         cone.compute(props);
 
         std::ostringstream oss;
@@ -256,6 +300,13 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         if (g.support) dumpMatrix("support hyperplanes", cone.getSupportHyperplanes());
         if (g.hseries) oss << "Hilbert series:\n" << cone.getHilbertSeries() << "\n\n";
         if (g.mult)    oss << "multiplicity: " << cone.getMultiplicity() << "\n\n";
+        if (g.volume)  oss << "volume: " << cone.getVolume() << "\n\n";
+        if (g.latpts)  oss << "number of lattice points: " << cone.getNumberLatticePoints() << "\n\n";
+        if (g.classgrp) {
+            oss << "class group:";
+            for (const mpz_class& x : cone.getClassGroup()) oss << " " << x;
+            oss << "\n\n";
+        }
 
         r.ok = true;
         r.text = oss.str();
@@ -269,7 +320,8 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
 
 void MainWindow::startCompute() {
     Goals g{ cbHilbert_->isChecked(), cbExtreme_->isChecked(), cbSupport_->isChecked(),
-             cbHSeries_->isChecked(), cbMult_->isChecked() };
+             cbHSeries_->isChecked(), cbMult_->isChecked(),
+             cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked() };
     // Capture the editor text on the GUI thread; the worker must not touch widgets.
     std::string inputText = input_->toPlainText().toStdString();
     compute_->setEnabled(false);

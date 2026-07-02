@@ -31,7 +31,8 @@ private slots:
     void saveFileAs();
 
 private:
-    struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult; };
+    struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
+                   bool volume; bool latpts; bool classgrp; };
     struct Result { bool ok = false; std::string text; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
@@ -48,6 +49,9 @@ private:
     QCheckBox* cbSupport_;
     QCheckBox* cbHSeries_;
     QCheckBox* cbMult_;
+    QCheckBox* cbVolume_;
+    QCheckBox* cbLatPts_;
+    QCheckBox* cbClassGrp_;
     QRadioButton* backendLocal_;
     QRadioButton* backendRemote_;
     QString currentPath_;

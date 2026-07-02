@@ -15,7 +15,9 @@ the roadmap toward a complete replacement.
 - File menu: New (size dialog), Open, Save, Save As; the window title tracks the
   current file and unsaved changes.
 - Computation goals: Hilbert basis, extreme rays, support hyperplanes, Hilbert
-  series, multiplicity.
+  series, multiplicity, volume, lattice points, class group.
+- Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
+  website, manual, About).
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
   the distributed backend is planned; the choice is already visible in the UI.
 - Computation runs off the GUI thread (QtConcurrent); UI stays responsive,
@@ -45,7 +47,8 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
   coefficient, Lebesgue integral.
 - Full `libnormaliz` build (non-NAKED): algebraic polyhedra (e-antic),
   integrals (CoCoALib), automorphism groups (nauty).
-- Help: manual, website, mathematical background, about.
+- Help: this documentation and a mathematical-background dialog
+  (website / manual / About are done).
 
 ## Beyond jNormaliz
 
