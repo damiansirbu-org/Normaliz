@@ -37,9 +37,9 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 
 | jNormaliz | Status | Notes |
 |---|---|---|
-| Algorithm box | [ ] | Primal/Dual/... compute option |
-| Computational mode box | [ ] | DefaultMode/... |
-| Precision box | [ ] | default/infinite; arithmetic-type dispatch |
+| Algorithm box | [x] | Default / Primal / Dual (PrimalMode/DualMode) |
+| Computational mode box | [x] | Goals only / DefaultMode |
+| Precision box | [x] | Default / BigInt |
 
 ## Tabbed panel
 
@@ -109,10 +109,10 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 ## Summary
 
-Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run and Stop, most of
-the Help menu, both current tabs, eight computation goals, elapsed-time status.
-Remaining for 100% parity: Close/Print, toolbar selectors
-(algorithm/mode/precision), Console and Options tabs, the memory gauge, Help
-(this doc + math background), and more computation goals. Beyond jNormaliz:
-in-process engine, installers and the Local backend are done; visualization,
-observability, autotuning and provenance are the research pillars.
+Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run and Stop, the
+toolbar (algorithm/mode/precision), most of the Help menu, both current tabs,
+eight computation goals, elapsed-time status. Remaining for 100% parity:
+Close/Print, Console and Options tabs, the memory gauge, Help (this doc + math
+background), and more computation goals. Beyond jNormaliz: in-process engine,
+installers and the Local backend are done; visualization, observability,
+autotuning and provenance are the research pillars.

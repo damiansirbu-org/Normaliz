@@ -26,6 +26,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QTimer>
+#include <QToolBar>
+#include <QComboBox>
 #include <QtConcurrent>
 
 #include <sstream>
@@ -113,6 +115,25 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     setCentralWidget(central);
     buildMenu();
+
+    // Toolbar: run options, mapped to libnormaliz ConeProperty flags.
+    QToolBar* tb = addToolBar("Options");
+    tb->setMovable(false);
+    tb->addWidget(new QLabel(" Algorithm: "));
+    algoCombo_ = new QComboBox();
+    algoCombo_->addItems({"Default", "Primal", "Dual"});
+    algoCombo_->setToolTip("Compute algorithm (PrimalMode / DualMode)");
+    tb->addWidget(algoCombo_);
+    tb->addWidget(new QLabel("   Mode: "));
+    modeCombo_ = new QComboBox();
+    modeCombo_->addItems({"Goals only", "DefaultMode"});
+    modeCombo_->setToolTip("DefaultMode also computes Normaliz's default properties");
+    tb->addWidget(modeCombo_);
+    tb->addWidget(new QLabel("   Precision: "));
+    precCombo_ = new QComboBox();
+    precCombo_->addItems({"Default", "BigInt"});
+    precCombo_->setToolTip("BigInt forces arbitrary-precision arithmetic");
+    tb->addWidget(precCombo_);
 
     elapsedLabel_ = new QLabel("Elapsed: 0.0s");
     statusBar()->addPermanentWidget(elapsedLabel_);
@@ -288,7 +309,7 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         Cone<mpz_class> cone(input);
 
         if (!(g.hilbert || g.extreme || g.support || g.hseries || g.mult
-              || g.volume || g.latpts || g.classgrp))
+              || g.volume || g.latpts || g.classgrp) && g.mode != 1)
             g.hilbert = true;
 
         ConeProperties props;
@@ -300,6 +321,11 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         if (g.volume)   props.set(ConeProperty::Volume);
         if (g.latpts)   props.set(ConeProperty::NumberLatticePoints);
         if (g.classgrp) props.set(ConeProperty::ClassGroup);
+        // Toolbar options.
+        if (g.algo == 1)      props.set(ConeProperty::PrimalMode);
+        else if (g.algo == 2) props.set(ConeProperty::DualMode);
+        if (g.mode == 1) props.set(ConeProperty::DefaultMode);
+        if (g.prec == 1) props.set(ConeProperty::BigInt);
         cone.compute(props);
 
         std::ostringstream oss;
@@ -340,7 +366,8 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
 void MainWindow::startCompute() {
     Goals g{ cbHilbert_->isChecked(), cbExtreme_->isChecked(), cbSupport_->isChecked(),
              cbHSeries_->isChecked(), cbMult_->isChecked(),
-             cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked() };
+             cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked(),
+             algoCombo_->currentIndex(), modeCombo_->currentIndex(), precCombo_->currentIndex() };
     // Capture the editor text on the GUI thread; the worker must not touch widgets.
     std::string inputText = input_->toPlainText().toStdString();
     nmz_interrupted = 0;   // clear any stale interrupt request from a previous Stop

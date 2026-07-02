@@ -26,6 +26,8 @@ First working skeleton with cross-platform delivery.
 - Stop button: cancels a running computation (nmz_interrupted); the result shows
   "Computation stopped".
 - Status bar shows elapsed time during and after a computation.
+- Toolbar with Algorithm (Primal/Dual), Mode (DefaultMode) and Precision
+  (BigInt) selectors, mapped to ConeProperty flags.
 - Off-thread computation (QtConcurrent) with responsive UI and status line.
 - Exception-safe worker: `NormalizException` shown as text, no crash.
 - Neutral high-contrast theme; WIN32 GUI subsystem (no console window).

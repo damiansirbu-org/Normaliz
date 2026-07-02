@@ -147,6 +147,30 @@ QLabel#sectionLabel {
     font-weight: 600;
     padding-top: 4px;
 }
+QToolBar {
+    background: #f4f5f7;
+    border: none;
+    border-bottom: 1px solid #d0d4d9;
+    spacing: 2px;
+    padding: 4px 6px;
+}
+QComboBox {
+    background: #ffffff;
+    border: 1px solid #ccd1d6;
+    border-radius: 3px;
+    padding: 3px 8px;
+    min-width: 84px;
+}
+QComboBox::drop-down {
+    border: none;
+    width: 18px;
+}
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    border: 1px solid #d0d4d9;
+    selection-background-color: #2f363d;
+    selection-color: #ffffff;
+}
 QStatusBar {
     background: #f4f5f7;
     color: #57606a;

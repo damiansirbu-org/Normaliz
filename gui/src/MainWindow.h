@@ -13,6 +13,7 @@ class QRadioButton;
 class QCloseEvent;
 class QLabel;
 class QTimer;
+class QComboBox;
 
 // Clean 3-zone layout: input (.in) editor, computation-goal selector, output,
 // plus a File menu. The computation runs off the GUI thread (QtConcurrent) and
@@ -36,7 +37,8 @@ private slots:
 
 private:
     struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
-                   bool volume; bool latpts; bool classgrp; };
+                   bool volume; bool latpts; bool classgrp;
+                   int algo; int mode; int prec; };  // toolbar combo indices
     struct Result { bool ok = false; bool stopped = false; std::string text; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
@@ -60,6 +62,9 @@ private:
     QCheckBox* cbVolume_;
     QCheckBox* cbLatPts_;
     QCheckBox* cbClassGrp_;
+    QComboBox* algoCombo_;
+    QComboBox* modeCombo_;
+    QComboBox* precCombo_;
     QRadioButton* backendLocal_;
     QRadioButton* backendRemote_;
     QString currentPath_;
