@@ -47,8 +47,8 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 |---|---|---|
 | Input tab | [x] | editor pane |
 | Output tab | [x] | output pane (text) |
-| Console tab | [ ] | real-time verbose engine log |
-| Options tab | [ ] | output options, thread control, font size, NmzIntegrate |
+| Console tab | [x] | libnormaliz verbose output (shown on completion) |
+| Options tab | [x] | thread control + font size |
 
 ## Options (jNormaliz Options tab)
 
@@ -56,8 +56,8 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 |---|---|---|
 | Output file options (.out/.gen/.inv/.typ/.cst, triangulation, Stanley) | [-] | in-process; no .out files. Structured results instead |
 | Ignore in-file options | [ ] | OptionsHandler flag |
-| Control parallel threads | [ ] | thread count / OMP_NUM_THREADS |
-| Font size | [ ] | editor and output font |
+| Control parallel threads | [x] | Options tab spinbox (set_thread_limit) |
+| Font size | [x] | Options tab spinbox |
 | NmzIntegrate (Ehrhart series, quasipolynomial leading coeff, Lebesgue integral) | [ ] | needs NmzIntegrate / CoCoALib |
 
 ## Status line
@@ -75,7 +75,7 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 | Help | [ ] | this documentation |
 | Open Normaliz manual | [x] | opens the online manual PDF |
 | Open Normaliz website | [x] | opens the Normaliz GitHub |
-| Mathematical background | [ ] | dialog with links |
+| Mathematical background | [x] | dialog with a short description and links |
 | About | [x] | about box |
 
 ## Computation goals
@@ -110,9 +110,10 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 ## Summary
 
 Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run and Stop, the
-toolbar (algorithm/mode/precision), most of the Help menu, both current tabs,
+toolbar (algorithm/mode/precision), the Help menu (website/manual/math
+background/About), the Output/Console/Options tabs (thread control, font size),
 eight computation goals, elapsed-time status. Remaining for 100% parity:
-Close/Print, Console and Options tabs, the memory gauge, Help (this doc + math
-background), and more computation goals. Beyond jNormaliz: in-process engine,
-installers and the Local backend are done; visualization, observability,
+Close/Print, the memory gauge, Help "this documentation", Ignore-in-file and
+NmzIntegrate options, and more computation goals. Beyond jNormaliz: in-process
+engine, installers and the Local backend are done; visualization, observability,
 autotuning and provenance are the research pillars.

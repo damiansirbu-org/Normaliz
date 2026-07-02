@@ -26,6 +26,8 @@ the roadmap toward a complete replacement.
   elapsed time.
 - Toolbar: Algorithm (Default/Primal/Dual), Mode (Goals only / DefaultMode),
   Precision (Default / BigInt), mapped to ConeProperty flags.
+- Tabbed panel: Output / Console (captured libnormaliz verbose log) / Options
+  (thread count, font size).
 - Exception-safe: `libnormaliz` errors are caught and shown as text, never crash.
 - Arbitrary-precision arithmetic (GMP `mpz_class`).
 - Neutral high-contrast theme; no console window (WIN32 subsystem).
@@ -39,9 +41,9 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
 - File: Print and Close, plus an unsaved-changes prompt on exit
   (New/Open/Save/Save As are done).
-- Console/log tab: real-time verbose engine output.
-- Output options: `.out/.gen/.inv/.typ/.cst`, triangulation, Stanley
-  decomposition; thread control; font size.
+- Live-streaming Console (currently the verbose log is shown when the run ends).
+- Output-file options (`.out/.gen/.inv/.typ/.cst`, triangulation, Stanley) - not
+  applicable to the in-process engine.
 - Full computation goals (all `ConeProperty`): Hilbert/Ehrhart series,
   multiplicity, volume, lattice points, class group, and more.
 - Structured output: matrices in tables, series as text; export.

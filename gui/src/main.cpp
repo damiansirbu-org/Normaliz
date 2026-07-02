@@ -171,6 +171,34 @@ QComboBox QAbstractItemView {
     selection-background-color: #2f363d;
     selection-color: #ffffff;
 }
+QTabWidget::pane {
+    background: #ffffff;
+    border: 1px solid #d0d4d9;
+    border-radius: 3px;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #eceef1;
+    border: 1px solid #d0d4d9;
+    border-bottom: none;
+    padding: 6px 14px;
+    margin-right: 2px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    color: #57606a;
+}
+QTabBar::tab:selected {
+    background: #ffffff;
+    color: #24292f;
+    font-weight: 600;
+}
+QSpinBox {
+    background: #ffffff;
+    border: 1px solid #ccd1d6;
+    border-radius: 3px;
+    padding: 3px 6px;
+    min-width: 60px;
+}
 QStatusBar {
     background: #f4f5f7;
     color: #57606a;

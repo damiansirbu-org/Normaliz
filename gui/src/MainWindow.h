@@ -14,10 +14,12 @@ class QCloseEvent;
 class QLabel;
 class QTimer;
 class QComboBox;
+class QSpinBox;
 
-// Clean 3-zone layout: input (.in) editor, computation-goal selector, output,
-// plus a File menu. The computation runs off the GUI thread (QtConcurrent) and
-// libnormaliz exceptions are caught in the worker (none may reach the event loop).
+// Layout: input (.in) editor + computation-goal selector on top; a tabbed panel
+// (Output / Console / Options) below; a File/Edit/Help menu and a run toolbar.
+// The computation runs off the GUI thread (QtConcurrent); libnormaliz exceptions
+// are caught in the worker and never reach the Qt event loop.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -38,22 +40,20 @@ private slots:
 private:
     struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
                    bool volume; bool latpts; bool classgrp;
-                   int algo; int mode; int prec; };  // toolbar combo indices
-    struct Result { bool ok = false; bool stopped = false; std::string text; };
+                   int algo; int mode; int prec; int threads; };
+    struct Result { bool ok = false; bool stopped = false; std::string text; std::string console; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
 
     void buildMenu();
     void updateTitle();
-    bool maybeSave();   // prompt to save if modified; false = caller should abort
+    bool maybeSave();
 
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;
+    QPlainTextEdit* console_;
     QPushButton* compute_;
     QPushButton* stop_;
-    QLabel* elapsedLabel_;
-    QTimer* tick_;
-    QElapsedTimer elapsed_;
     QCheckBox* cbHilbert_;
     QCheckBox* cbExtreme_;
     QCheckBox* cbSupport_;
@@ -65,8 +65,13 @@ private:
     QComboBox* algoCombo_;
     QComboBox* modeCombo_;
     QComboBox* precCombo_;
+    QSpinBox* threadsSpin_;
+    QSpinBox* fontSpin_;
     QRadioButton* backendLocal_;
     QRadioButton* backendRemote_;
+    QLabel* elapsedLabel_;
+    QTimer* tick_;
+    QElapsedTimer elapsed_;
     QString currentPath_;
     QFutureWatcher<Result> watcher_;
 };

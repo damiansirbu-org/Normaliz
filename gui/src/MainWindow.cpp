@@ -3,12 +3,15 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QFormLayout>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QLabel>
+#include <QSpinBox>
+#include <QTabWidget>
 #include <QStatusBar>
 #include <QMenuBar>
 #include <QMenu>
@@ -28,11 +31,13 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QComboBox>
+#include <QFont>
 #include <QtConcurrent>
 
 #include <sstream>
 #include <vector>
 #include <map>
+#include <iostream>
 
 #include "libnormaliz/cone.h"
 #include "libnormaliz/input.h"
@@ -41,6 +46,22 @@
 #include "libnormaliz/general.h"
 
 using namespace libnormaliz;
+
+namespace {
+// RAII: send libnormaliz verbose output to a buffer for the Console tab, and
+// restore the previous state (even on exception) so no dangling stream remains.
+struct VerboseCapture {
+    bool old_;
+    explicit VerboseCapture(std::ostream& s) {
+        old_ = setVerboseDefault(true);
+        setVerboseOutput(s);
+    }
+    ~VerboseCapture() {
+        setVerboseDefault(old_);
+        setVerboseOutput(std::cout);
+    }
+};
+}  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     auto* central = new QWidget(this);
@@ -106,12 +127,34 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     root->addLayout(top, 3);
 
-    auto* outBox = new QGroupBox("Output");
-    auto* oLay = new QVBoxLayout(outBox);
+    // Tabbed panel: Output / Console / Options.
+    auto* tabs = new QTabWidget();
     output_ = new QPlainTextEdit();
     output_->setReadOnly(true);
-    oLay->addWidget(output_);
-    root->addWidget(outBox, 2);
+    console_ = new QPlainTextEdit();
+    console_->setReadOnly(true);
+    tabs->addTab(output_, "Output");
+    tabs->addTab(console_, "Console");
+
+    auto* optWidget = new QWidget();
+    auto* optForm = new QFormLayout(optWidget);
+    threadsSpin_ = new QSpinBox();
+    threadsSpin_->setRange(0, 256);
+    threadsSpin_->setValue(0);
+    threadsSpin_->setToolTip("Maximum parallel threads; 0 = automatic");
+    optForm->addRow("Max threads (0 = auto):", threadsSpin_);
+    fontSpin_ = new QSpinBox();
+    fontSpin_->setRange(8, 28);
+    fontSpin_->setValue(10);
+    optForm->addRow("Font size:", fontSpin_);
+    auto* optNote = new QLabel(
+        "Output-file options and NmzIntegrate are not applicable here: the engine "
+        "runs in process (no .out files) and this build has no CoCoALib.");
+    optNote->setWordWrap(true);
+    optForm->addRow(optNote);
+    tabs->addTab(optWidget, "Options");
+
+    root->addWidget(tabs, 2);
 
     setCentralWidget(central);
     buildMenu();
@@ -149,6 +192,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(&watcher_, &QFutureWatcher<Result>::finished, this, &MainWindow::computeFinished);
     connect(tick_, &QTimer::timeout, this, [this] {
         elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
+    });
+    connect(fontSpin_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pt) {
+        for (QPlainTextEdit* w : {input_, output_, console_}) {
+            QFont f = w->font();
+            f.setPointSize(pt);
+            w->setFont(f);
+        }
     });
     connect(input_->document(), &QTextDocument::modificationChanged,
             this, [this](bool) { updateTitle(); });
@@ -190,6 +240,16 @@ void MainWindow::buildMenu() {
     });
     helpMenu->addAction("Normaliz &manual", this, [] {
         QDesktopServices::openUrl(QUrl("https://github.com/Normaliz/Normaliz/blob/master/doc/Normaliz.pdf"));
+    });
+    helpMenu->addAction("Mathematical &background", this, [this] {
+        QMessageBox::information(this, "Mathematical background",
+            "<b>Normaliz</b> computes Hilbert bases of rational cones and the "
+            "normalization of affine monoids, Hilbert/Ehrhart series, volumes and "
+            "lattice points.<br><br>"
+            "Key algorithm: pyramid decomposition "
+            "(Bruns, Ichim, Soeger).<br><br>"
+            "Papers and documentation: "
+            "<a href='https://github.com/Normaliz/Normaliz'>github.com/Normaliz/Normaliz</a>.");
     });
     helpMenu->addSeparator();
     helpMenu->addAction("&About", this, [this] {
@@ -295,6 +355,7 @@ void MainWindow::saveFileAs() {
 // Worker thread. All exceptions are caught here; none may escape into Qt.
 MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
     Result r;
+    std::ostringstream vlog;
     try {
         // Parse the .in text with Normaliz's own parser (same path as the CLI):
         // text -> InputMap<mpq_class> -> Cone<mpz_class>. Handles every input
@@ -326,7 +387,14 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         else if (g.algo == 2) props.set(ConeProperty::DualMode);
         if (g.mode == 1) props.set(ConeProperty::DefaultMode);
         if (g.prec == 1) props.set(ConeProperty::BigInt);
-        cone.compute(props);
+
+        if (g.threads > 0)
+            set_thread_limit(g.threads);
+
+        {
+            VerboseCapture vc(vlog);   // capture verbose output for the Console tab
+            cone.compute(props);
+        }
 
         std::ostringstream oss;
         auto dumpMatrix = [&oss](const char* title, const std::vector<std::vector<mpz_class> >& m) {
@@ -360,6 +428,7 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
     } catch (...) {
         r.text = "Error: unknown exception in libnormaliz";
     }
+    r.console = vlog.str();
     return r;
 }
 
@@ -367,7 +436,8 @@ void MainWindow::startCompute() {
     Goals g{ cbHilbert_->isChecked(), cbExtreme_->isChecked(), cbSupport_->isChecked(),
              cbHSeries_->isChecked(), cbMult_->isChecked(),
              cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked(),
-             algoCombo_->currentIndex(), modeCombo_->currentIndex(), precCombo_->currentIndex() };
+             algoCombo_->currentIndex(), modeCombo_->currentIndex(), precCombo_->currentIndex(),
+             threadsSpin_->value() };
     // Capture the editor text on the GUI thread; the worker must not touch widgets.
     std::string inputText = input_->toPlainText().toStdString();
     nmz_interrupted = 0;   // clear any stale interrupt request from a previous Stop
@@ -375,6 +445,7 @@ void MainWindow::startCompute() {
     stop_->setEnabled(true);
     statusBar()->showMessage("Computing...");
     output_->setPlainText("");
+    console_->setPlainText("");
     elapsedLabel_->setText("Elapsed: 0.0s");
     elapsed_.start();
     tick_->start();
@@ -394,6 +465,7 @@ void MainWindow::computeFinished() {
     elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
     const Result r = watcher_.result();
     output_->setPlainText(QString::fromStdString(r.text));
+    console_->setPlainText(QString::fromStdString(r.console));
     statusBar()->showMessage(r.ok ? "Ready" : (r.stopped ? "Stopped" : "Error"));
     compute_->setEnabled(true);
     stop_->setEnabled(false);
