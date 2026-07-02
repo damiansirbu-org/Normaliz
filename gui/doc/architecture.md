@@ -78,6 +78,18 @@ later the same request/result types can be serialized (JSON) and served by a
 computation service, with the desktop acting as an offline client and,
 optionally, a hybrid client that offloads large jobs to a remote backend.
 
+## Engine coverage
+
+The GUI exposes 21 computation goals through a goal table in `MainWindow.cpp`
+(a `ConeProperty` plus a `formatGoal` case per goal). Adding a goal is a
+two-line change. This covers the common integer/rational-cone properties.
+
+Two parts of the Normaliz engine are not yet reachable and need the full,
+non-NAKED `libnormaliz`: algebraic polyhedra (e-antic), integrals and weighted
+Ehrhart / NmzIntegrate (CoCoALib), and automorphism groups (nauty). Building
+those optional libraries into `libnormaliz.a` and the CI is the remaining step
+to cover the whole engine.
+
 ## Current limitations
 
 - `libnormaliz` is built NAKED (GMP only): no algebraic polyhedra (e-antic),

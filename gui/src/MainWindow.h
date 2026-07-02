@@ -5,6 +5,7 @@
 #include <QString>
 #include <QElapsedTimer>
 #include <string>
+#include <vector>
 
 class QPlainTextEdit;
 class QPushButton;
@@ -16,10 +17,10 @@ class QTimer;
 class QComboBox;
 class QSpinBox;
 
-// Layout: input (.in) editor + computation-goal selector on top; a tabbed panel
-// (Output / Console / Options) below; a File/Edit/Help menu and a run toolbar.
-// The computation runs off the GUI thread (QtConcurrent); libnormaliz exceptions
-// are caught in the worker and never reach the Qt event loop.
+// Layout: input (.in) editor + a scrollable computation-goal selector on top; a
+// tabbed panel (Output / Console / Options) below; File/Edit/Help menus and a
+// run toolbar. Computation runs off the GUI thread (QtConcurrent); libnormaliz
+// exceptions are caught in the worker and never reach the Qt event loop.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -40,9 +41,9 @@ private slots:
     void printCurrent();
 
 private:
-    struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
-                   bool volume; bool latpts; bool classgrp;
-                   int algo; int mode; int prec; int threads; };
+    // idx = indices into the goal table (see MainWindow.cpp); the rest are the
+    // toolbar/options combo values. Passed by value to the worker thread.
+    struct Goals { std::vector<int> idx; int algo; int mode; int prec; int threads; };
     struct Result { bool ok = false; bool stopped = false; std::string text; std::string console; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
@@ -56,14 +57,7 @@ private:
     QPlainTextEdit* console_;
     QPushButton* compute_;
     QPushButton* stop_;
-    QCheckBox* cbHilbert_;
-    QCheckBox* cbExtreme_;
-    QCheckBox* cbSupport_;
-    QCheckBox* cbHSeries_;
-    QCheckBox* cbMult_;
-    QCheckBox* cbVolume_;
-    QCheckBox* cbLatPts_;
-    QCheckBox* cbClassGrp_;
+    std::vector<QCheckBox*> cbGoals_;   // parallel to the goal table
     QComboBox* algoCombo_;
     QComboBox* modeCombo_;
     QComboBox* precCombo_;

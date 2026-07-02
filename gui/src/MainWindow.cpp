@@ -5,6 +5,8 @@
 #include <QHBoxLayout>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QScrollArea>
+#include <QFrame>
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QCheckBox>
@@ -64,6 +66,7 @@
 using namespace libnormaliz;
 
 namespace {
+
 // RAII: send libnormaliz verbose output to a buffer for the Console tab, and
 // restore the previous state (even on exception) so no dangling stream remains.
 struct VerboseCapture {
@@ -97,6 +100,84 @@ QString processMemoryText() {
     return QString();
 #endif
 }
+
+// The computation goals offered in the UI. Each maps a checkbox to a
+// ConeProperty; the worker sets them on compute() and formatGoal() prints the
+// result. Add a goal here and add a case in formatGoal(); nothing else changes.
+struct GoalDef { ConeProperty::Enum prop; const char* label; bool byDefault; };
+const std::vector<GoalDef>& goalTable() {
+    static const std::vector<GoalDef> t = {
+        {ConeProperty::HilbertBasis,        "Hilbert basis",         true},
+        {ConeProperty::ExtremeRays,         "Extreme rays",          false},
+        {ConeProperty::SupportHyperplanes,  "Support hyperplanes",   false},
+        {ConeProperty::ModuleGenerators,    "Module generators",     false},
+        {ConeProperty::Deg1Elements,        "Degree-1 elements",     false},
+        {ConeProperty::MaximalSubspace,     "Maximal subspace",      false},
+        {ConeProperty::HilbertSeries,       "Hilbert series",        false},
+        {ConeProperty::EhrhartSeries,       "Ehrhart series",        false},
+        {ConeProperty::Multiplicity,        "Multiplicity",          false},
+        {ConeProperty::Volume,              "Volume",                false},
+        {ConeProperty::NumberLatticePoints, "Lattice points",        false},
+        {ConeProperty::TriangulationSize,   "Triangulation size",    false},
+        {ConeProperty::ClassGroup,          "Class group",           false},
+        {ConeProperty::Grading,             "Grading",               false},
+        {ConeProperty::Dehomogenization,    "Dehomogenization",      false},
+        {ConeProperty::Rank,                "Rank",                  false},
+        {ConeProperty::EmbeddingDim,        "Embedding dimension",   false},
+        {ConeProperty::RecessionRank,       "Recession rank",        false},
+        {ConeProperty::IsPointed,           "Is pointed",            false},
+        {ConeProperty::IsGorenstein,        "Is Gorenstein",         false},
+        {ConeProperty::IsDeg1ExtremeRays,   "Deg-1 extreme rays",    false},
+    };
+    return t;
+}
+
+void dumpMatrix(std::ostream& o, const char* title, const std::vector<std::vector<mpz_class> >& m) {
+    o << m.size() << " " << title << ":\n";
+    for (const std::vector<mpz_class>& v : m) {
+        for (const mpz_class& x : v) o << x << " ";
+        o << "\n";
+    }
+    o << "\n";
+}
+
+void dumpVector(std::ostream& o, const char* title, const std::vector<mpz_class>& v) {
+    o << title << ":";
+    for (const mpz_class& x : v) o << " " << x;
+    o << "\n\n";
+}
+
+// Format a computed goal. Called only for goals that were requested and thus
+// computed, so the getters do not throw.
+std::string formatGoal(Cone<mpz_class>& cone, ConeProperty::Enum p) {
+    std::ostringstream o;
+    switch (p) {
+        case ConeProperty::HilbertBasis:        dumpMatrix(o, "Hilbert basis elements", cone.getHilbertBasis()); break;
+        case ConeProperty::ExtremeRays:         dumpMatrix(o, "extreme rays", cone.getExtremeRays()); break;
+        case ConeProperty::SupportHyperplanes:  dumpMatrix(o, "support hyperplanes", cone.getSupportHyperplanes()); break;
+        case ConeProperty::ModuleGenerators:    dumpMatrix(o, "module generators", cone.getModuleGenerators()); break;
+        case ConeProperty::Deg1Elements:        dumpMatrix(o, "degree 1 elements", cone.getDeg1Elements()); break;
+        case ConeProperty::MaximalSubspace:     dumpMatrix(o, "maximal subspace generators", cone.getMaximalSubspace()); break;
+        case ConeProperty::HilbertSeries:       o << "Hilbert series:\n" << cone.getHilbertSeries() << "\n\n"; break;
+        case ConeProperty::EhrhartSeries:       o << "Ehrhart series:\n" << cone.getEhrhartSeries() << "\n\n"; break;
+        case ConeProperty::Multiplicity:        o << "multiplicity: " << cone.getMultiplicity() << "\n\n"; break;
+        case ConeProperty::Volume:              o << "volume: " << cone.getVolume() << "\n\n"; break;
+        case ConeProperty::NumberLatticePoints: o << "number of lattice points: " << cone.getNumberLatticePoints() << "\n\n"; break;
+        case ConeProperty::TriangulationSize:   o << "triangulation size: " << cone.getTriangulationSize() << "\n\n"; break;
+        case ConeProperty::ClassGroup:          dumpVector(o, "class group", cone.getClassGroup()); break;
+        case ConeProperty::Grading:             dumpVector(o, "grading", cone.getGrading()); break;
+        case ConeProperty::Dehomogenization:    dumpVector(o, "dehomogenization", cone.getDehomogenization()); break;
+        case ConeProperty::Rank:                o << "rank: " << cone.getRank() << "\n\n"; break;
+        case ConeProperty::EmbeddingDim:        o << "embedding dimension: " << cone.getEmbeddingDim() << "\n\n"; break;
+        case ConeProperty::RecessionRank:       o << "recession rank: " << cone.getRecessionRank() << "\n\n"; break;
+        case ConeProperty::IsPointed:           o << "pointed: " << (cone.isPointed() ? "yes" : "no") << "\n\n"; break;
+        case ConeProperty::IsGorenstein:        o << "Gorenstein: " << (cone.isGorenstein() ? "yes" : "no") << "\n\n"; break;
+        case ConeProperty::IsDeg1ExtremeRays:   o << "degree-1 extreme rays: " << (cone.isDeg1ExtremeRays() ? "yes" : "no") << "\n\n"; break;
+        default:                                o << "computed.\n\n"; break;
+    }
+    return o.str();
+}
+
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -117,23 +198,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     auto* goalsBox = new QGroupBox("Computation goals");
     auto* gLay = new QVBoxLayout(goalsBox);
-    cbHilbert_ = new QCheckBox("Hilbert basis");
-    cbHilbert_->setChecked(true);
-    cbExtreme_ = new QCheckBox("Extreme rays");
-    cbSupport_ = new QCheckBox("Support hyperplanes");
-    cbHSeries_ = new QCheckBox("Hilbert series");
-    cbMult_ = new QCheckBox("Multiplicity");
-    cbVolume_ = new QCheckBox("Volume");
-    cbLatPts_ = new QCheckBox("Lattice points");
-    cbClassGrp_ = new QCheckBox("Class group");
-    gLay->addWidget(cbHilbert_);
-    gLay->addWidget(cbExtreme_);
-    gLay->addWidget(cbSupport_);
-    gLay->addWidget(cbHSeries_);
-    gLay->addWidget(cbMult_);
-    gLay->addWidget(cbVolume_);
-    gLay->addWidget(cbLatPts_);
-    gLay->addWidget(cbClassGrp_);
+
+    // The goal checkboxes live in a scroll area (there are many).
+    auto* goalsScroll = new QScrollArea();
+    goalsScroll->setWidgetResizable(true);
+    goalsScroll->setFrameShape(QFrame::NoFrame);
+    goalsScroll->setMinimumHeight(240);
+    auto* goalsInner = new QWidget();
+    auto* giLay = new QVBoxLayout(goalsInner);
+    giLay->setContentsMargins(0, 0, 0, 0);
+    for (const GoalDef& gd : goalTable()) {
+        auto* cb = new QCheckBox(gd.label);
+        cb->setChecked(gd.byDefault);
+        giLay->addWidget(cb);
+        cbGoals_.push_back(cb);
+    }
+    giLay->addStretch();
+    goalsScroll->setWidget(goalsInner);
+    gLay->addWidget(goalsScroll, 1);
 
     // Backend selector. Local (embedded libnormaliz) is the default and the only
     // implemented mode; Cloud (the distributed remote backend) is shown but
@@ -141,7 +223,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // See gui/doc/architecture.md, section "Shared core (desktop and web)".
     auto* backendLabel = new QLabel("Backend");
     backendLabel->setObjectName("sectionLabel");
-    gLay->addSpacing(8);
     gLay->addWidget(backendLabel);
     backendLocal_ = new QRadioButton("Local");
     backendLocal_->setChecked(true);
@@ -152,7 +233,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     gLay->addWidget(backendLocal_);
     gLay->addWidget(backendRemote_);
 
-    gLay->addStretch();
     compute_ = new QPushButton("Compute");
     compute_->setObjectName("compute");
     gLay->addWidget(compute_);
@@ -304,8 +384,7 @@ void MainWindow::buildMenu() {
             "<b>Normaliz</b> computes Hilbert bases of rational cones and the "
             "normalization of affine monoids, Hilbert/Ehrhart series, volumes and "
             "lattice points.<br><br>"
-            "Key algorithm: pyramid decomposition "
-            "(Bruns, Ichim, Soeger).<br><br>"
+            "Key algorithm: pyramid decomposition (Bruns, Ichim, Soeger).<br><br>"
             "Papers and documentation: "
             "<a href='https://github.com/Normaliz/Normaliz'>github.com/Normaliz/Normaliz</a>.");
     });
@@ -445,19 +524,17 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
             readNormalizInput<mpq_class>(in, options, num_param_input, poly_param_input, number_field);
         Cone<mpz_class> cone(input);
 
-        if (!(g.hilbert || g.extreme || g.support || g.hseries || g.mult
-              || g.volume || g.latpts || g.classgrp) && g.mode != 1)
-            g.hilbert = true;
+        // Resolve the requested goals (default to Hilbert basis when none are
+        // ticked and DefaultMode is off).
+        const std::vector<GoalDef>& tbl = goalTable();
+        std::vector<ConeProperty::Enum> selected;
+        for (int i : g.idx)
+            if (i >= 0 && i < (int)tbl.size()) selected.push_back(tbl[i].prop);
+        if (selected.empty() && g.mode != 1)
+            selected.push_back(ConeProperty::HilbertBasis);
 
         ConeProperties props;
-        if (g.hilbert) props.set(ConeProperty::HilbertBasis);
-        if (g.extreme) props.set(ConeProperty::ExtremeRays);
-        if (g.support) props.set(ConeProperty::SupportHyperplanes);
-        if (g.hseries) props.set(ConeProperty::HilbertSeries);
-        if (g.mult)    props.set(ConeProperty::Multiplicity);
-        if (g.volume)   props.set(ConeProperty::Volume);
-        if (g.latpts)   props.set(ConeProperty::NumberLatticePoints);
-        if (g.classgrp) props.set(ConeProperty::ClassGroup);
+        for (ConeProperty::Enum p : selected) props.set(p);
         // Toolbar options.
         if (g.algo == 1)      props.set(ConeProperty::PrimalMode);
         else if (g.algo == 2) props.set(ConeProperty::DualMode);
@@ -473,26 +550,8 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         }
 
         std::ostringstream oss;
-        auto dumpMatrix = [&oss](const char* title, const std::vector<std::vector<mpz_class> >& m) {
-            oss << m.size() << " " << title << ":\n";
-            for (const std::vector<mpz_class>& v : m) {
-                for (const mpz_class& x : v) oss << x << " ";
-                oss << "\n";
-            }
-            oss << "\n";
-        };
-        if (g.hilbert) dumpMatrix("Hilbert basis elements", cone.getHilbertBasis());
-        if (g.extreme) dumpMatrix("extreme rays", cone.getExtremeRays());
-        if (g.support) dumpMatrix("support hyperplanes", cone.getSupportHyperplanes());
-        if (g.hseries) oss << "Hilbert series:\n" << cone.getHilbertSeries() << "\n\n";
-        if (g.mult)    oss << "multiplicity: " << cone.getMultiplicity() << "\n\n";
-        if (g.volume)  oss << "volume: " << cone.getVolume() << "\n\n";
-        if (g.latpts)  oss << "number of lattice points: " << cone.getNumberLatticePoints() << "\n\n";
-        if (g.classgrp) {
-            oss << "class group:";
-            for (const mpz_class& x : cone.getClassGroup()) oss << " " << x;
-            oss << "\n\n";
-        }
+        for (ConeProperty::Enum p : selected)
+            oss << formatGoal(cone, p);
 
         r.ok = true;
         r.text = oss.str();
@@ -509,11 +568,13 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
 }
 
 void MainWindow::startCompute() {
-    Goals g{ cbHilbert_->isChecked(), cbExtreme_->isChecked(), cbSupport_->isChecked(),
-             cbHSeries_->isChecked(), cbMult_->isChecked(),
-             cbVolume_->isChecked(), cbLatPts_->isChecked(), cbClassGrp_->isChecked(),
-             algoCombo_->currentIndex(), modeCombo_->currentIndex(), precCombo_->currentIndex(),
-             threadsSpin_->value() };
+    Goals g;
+    for (int i = 0; i < (int)cbGoals_.size(); ++i)
+        if (cbGoals_[i]->isChecked()) g.idx.push_back(i);
+    g.algo = algoCombo_->currentIndex();
+    g.mode = modeCombo_->currentIndex();
+    g.prec = precCombo_->currentIndex();
+    g.threads = threadsSpin_->value();
     // Capture the editor text on the GUI thread; the worker must not touch widgets.
     std::string inputText = input_->toPlainText().toStdString();
     nmz_interrupted = 0;   // clear any stale interrupt request from a previous Stop

@@ -33,6 +33,10 @@ First working skeleton with cross-platform delivery.
   controls. Help gains a Mathematical-background dialog.
 - File Close and Print; a Help usage dialog; a memory gauge in the status bar
   (Windows/Linux). This completes essentially the full jNormaliz feature set.
+- Computation goals expanded to 21 via a goal table: module generators, degree-1
+  elements, maximal subspace, Ehrhart series, triangulation size, grading,
+  dehomogenization, rank, embedding dimension, recession rank, and the
+  is-pointed / is-Gorenstein / deg-1-extreme-rays tests, in a scrollable list.
 - Off-thread computation (QtConcurrent) with responsive UI and status line.
 - Exception-safe worker: `NormalizException` shown as text, no crash.
 - Neutral high-contrast theme; WIN32 GUI subsystem (no console window).

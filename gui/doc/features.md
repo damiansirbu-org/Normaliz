@@ -14,8 +14,11 @@ the roadmap toward a complete replacement.
   equations, congruences, grading, ...).
 - File menu: New (size dialog), Open, Close, Save, Save As, Print; the window
   title tracks the current file and unsaved changes.
-- Computation goals: Hilbert basis, extreme rays, support hyperplanes, Hilbert
-  series, multiplicity, volume, lattice points, class group.
+- 21 computation goals (scrollable): Hilbert basis, extreme rays, support
+  hyperplanes, module generators, degree-1 elements, maximal subspace, Hilbert
+  and Ehrhart series, multiplicity, volume, lattice points, triangulation size,
+  class group, grading, dehomogenization, rank, embedding dimension, recession
+  rank, and is-pointed / is-Gorenstein / deg-1-extreme-rays tests.
 - Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
   website, manual, About).
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
@@ -42,15 +45,12 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 - Live-streaming Console (currently the verbose log is shown when the run ends).
 - Output-file options (`.out/.gen/.inv/.typ/.cst`, triangulation, Stanley) - not
   applicable to the in-process engine.
-- Full computation goals (all `ConeProperty`): Hilbert/Ehrhart series,
-  multiplicity, volume, lattice points, class group, and more.
+- Full `libnormaliz` build (non-NAKED) to reach the rest of the engine:
+  algebraic polyhedra (e-antic), integrals / weighted Ehrhart (CoCoALib),
+  automorphism groups (nauty).
 - Structured output: matrices in tables, series as text; export.
 - NmzIntegrate: generalized Ehrhart series, quasipolynomial leading
-  coefficient, Lebesgue integral.
-- Full `libnormaliz` build (non-NAKED): algebraic polyhedra (e-antic),
-  integrals (CoCoALib), automorphism groups (nauty).
-- Help: this documentation and a mathematical-background dialog
-  (website / manual / About are done).
+  coefficient, Lebesgue integral (needs CoCoALib).
 
 ## Beyond jNormaliz
 

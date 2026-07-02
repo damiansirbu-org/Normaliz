@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
     app.setStyleSheet(kStyle);
 
     MainWindow w;
-    w.resize(740, 560);
+    w.resize(900, 800);
     w.show();
 
     // Hidden: `--shot <path>` renders the window to a PNG and exits.
