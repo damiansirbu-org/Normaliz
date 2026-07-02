@@ -21,6 +21,8 @@
 #include <QKeySequence>
 #include <QStringList>
 #include <QTextDocument>
+#include <QMessageBox>
+#include <QCloseEvent>
 #include <QtConcurrent>
 
 #include <sstream>
@@ -98,6 +100,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setCentralWidget(central);
     buildMenu();
     statusBar()->showMessage("Ready");
+    input_->document()->setModified(false);   // the preloaded example is not "unsaved"
     updateTitle();
 
     connect(compute_, &QPushButton::clicked, this, &MainWindow::startCompute);
@@ -127,9 +130,33 @@ void MainWindow::updateTitle() {
     setWindowModified(input_->document()->isModified());
 }
 
+// Prompt to save when there are unsaved edits. Returns false if the caller
+// should abort (user chose Cancel, or a requested save did not complete).
+bool MainWindow::maybeSave() {
+    if (!input_->document()->isModified())
+        return true;
+    QMessageBox::StandardButton ret = QMessageBox::warning(
+        this, "Normaliz",
+        "The input has unsaved changes.\nDo you want to save them?",
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    if (ret == QMessageBox::Save) {
+        saveFile();
+        return !input_->document()->isModified();  // false if Save As was cancelled
+    }
+    return ret != QMessageBox::Cancel;  // Discard -> true, Cancel -> false
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    if (maybeSave())
+        event->accept();
+    else
+        event->ignore();
+}
+
 // New: ask for a matrix size and load a zero-filled cone template to edit,
 // mirroring jNormaliz's "New input" dialog.
 void MainWindow::newFile() {
+    if (!maybeSave()) return;
     bool ok = false;
     int cols = QInputDialog::getInt(this, "New input", "Ambient dimension (columns):",
                                     2, 1, 100000, 1, &ok);
@@ -150,6 +177,7 @@ void MainWindow::newFile() {
 }
 
 void MainWindow::openFile() {
+    if (!maybeSave()) return;
     QString path = QFileDialog::getOpenFileName(this, "Open input", QString(),
                                                 "Normaliz input (*.in);;All files (*)");
     if (path.isEmpty()) return;

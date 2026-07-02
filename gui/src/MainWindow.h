@@ -9,6 +9,7 @@ class QPlainTextEdit;
 class QPushButton;
 class QCheckBox;
 class QRadioButton;
+class QCloseEvent;
 
 // Clean 3-zone layout: input (.in) editor, computation-goal selector, output,
 // plus a File menu. The computation runs off the GUI thread (QtConcurrent) and
@@ -17,6 +18,9 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void startCompute();
@@ -34,6 +38,7 @@ private:
 
     void buildMenu();
     void updateTitle();
+    bool maybeSave();   // prompt to save if modified; false = caller should abort
 
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;

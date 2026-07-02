@@ -16,6 +16,8 @@ First working skeleton with cross-platform delivery.
   ...), not just the built-in example.
 - File menu: New (size dialog), Open, Save, Save As; the window title tracks the
   current file and unsaved changes.
+- Unsaved-changes guard: New / Open / Exit prompt to Save / Discard / Cancel when
+  the input was edited (no silent data loss).
 - Computation goals: Hilbert series and multiplicity added (alongside Hilbert
   basis, extreme rays, support hyperplanes).
 - Off-thread computation (QtConcurrent) with responsive UI and status line.

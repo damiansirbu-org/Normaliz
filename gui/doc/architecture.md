@@ -86,3 +86,7 @@ optionally, a hybrid client that offloads large jobs to a remote backend.
   Hilbert series, multiplicity); more `ConeProperty` targets remain.
 - No run controls (algorithm/mode/precision), console/log, or cancel yet
   (further jNormaliz parity is the next milestone).
+- `libnormaliz` is built with assertions on (NAKED, no `-DNDEBUG`): a malformed
+  internal state can `abort()` the app instead of throwing; a parity/release
+  build should define `NDEBUG`.
+- Large results are rendered as a single text block (no paging/streaming yet).
