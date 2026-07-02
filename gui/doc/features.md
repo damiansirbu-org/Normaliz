@@ -11,6 +11,8 @@ the roadmap toward a complete replacement.
   directly - no `.in`/`.out` file round-trip.
 - Input editor for Normaliz `.in` text.
 - Computation goals: Hilbert basis, extreme rays, support hyperplanes.
+- Backend selector: Local (default, embedded) and Remote (shown, disabled) - the
+  distributed backend is planned; the choice is already visible in the UI.
 - Computation runs off the GUI thread (QtConcurrent); UI stays responsive,
   Compute disabled while running, status shows Computing / Ready / Error.
 - Exception-safe: `libnormaliz` errors are caught and shown as text, never crash.

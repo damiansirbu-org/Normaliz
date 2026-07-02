@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 #include <QCheckBox>
+#include <QRadioButton>
+#include <QLabel>
 #include <QStatusBar>
 #include <QtConcurrent>
 
@@ -42,6 +44,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     gLay->addWidget(cbHilbert_);
     gLay->addWidget(cbExtreme_);
     gLay->addWidget(cbSupport_);
+
+    // Backend selector. Local (embedded libnormaliz) is the default and the only
+    // implemented mode; Remote (a distributed backend) is shown but disabled -
+    // the architecture is in place, the implementation comes later.
+    // See gui/doc/architecture.md, section "Shared core (desktop and web)".
+    auto* backendLabel = new QLabel("Backend");
+    backendLabel->setObjectName("sectionLabel");
+    gLay->addSpacing(8);
+    gLay->addWidget(backendLabel);
+    backendLocal_ = new QRadioButton("Local");
+    backendLocal_->setChecked(true);
+    backendLocal_->setToolTip("Compute in this application (embedded engine)");
+    backendRemote_ = new QRadioButton("Remote (coming soon)");
+    backendRemote_->setEnabled(false);
+    backendRemote_->setToolTip("Planned distributed backend - not yet available");
+    gLay->addWidget(backendLocal_);
+    gLay->addWidget(backendRemote_);
+
     gLay->addStretch();
     compute_ = new QPushButton("Compute");
     compute_->setObjectName("compute");

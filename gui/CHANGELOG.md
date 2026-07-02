@@ -18,6 +18,8 @@ First working skeleton with cross-platform delivery.
 - NSIS installer (`installer/normaliz-gui.nsi`).
 - Cross-platform CI (`.github/workflows/gui-release.yml`): Windows setup.exe,
   Linux AppImage, macOS .dmg, uploaded as run artifacts.
+- Backend selector in the UI: Local (default, embedded engine) and Remote
+  (shown but disabled) - placeholder for the planned distributed backend.
 - Documentation: `doc/architecture.md`, `doc/usage.md`, `doc/features.md`.
 
 ### Known limitations

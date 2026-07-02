@@ -7,6 +7,7 @@
 class QPlainTextEdit;
 class QPushButton;
 class QCheckBox;
+class QRadioButton;
 
 // Clean 3-zone layout: input (.in) editor, computation-goal selector, output.
 // The computation runs off the GUI thread (QtConcurrent) and libnormaliz
@@ -31,5 +32,7 @@ private:
     QCheckBox* cbHilbert_;
     QCheckBox* cbExtreme_;
     QCheckBox* cbSupport_;
+    QRadioButton* backendLocal_;
+    QRadioButton* backendRemote_;
     QFutureWatcher<Result> watcher_;
 };

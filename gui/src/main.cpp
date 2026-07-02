@@ -83,6 +83,34 @@ QCheckBox::indicator:checked {
     background: #2f363d;
     border-color: #2f363d;
 }
+QRadioButton {
+    background: transparent;
+    spacing: 8px;
+    padding: 3px 2px;
+}
+QRadioButton:disabled {
+    color: #9aa2ab;
+}
+QRadioButton::indicator {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #ccd1d6;
+    border-radius: 7px;
+    background: #ffffff;
+}
+QRadioButton::indicator:checked {
+    background: #2f363d;
+    border-color: #2f363d;
+}
+QRadioButton::indicator:disabled {
+    border-color: #dfe3e8;
+    background: #f0f2f4;
+}
+QLabel#sectionLabel {
+    color: #57606a;
+    font-weight: 600;
+    padding-top: 4px;
+}
 QStatusBar {
     background: #f4f5f7;
     color: #57606a;

@@ -60,6 +60,20 @@ one job per OS:
 Each job builds `libnormaliz.a` (static, NAKED), builds the GUI, packages the
 native installer, and uploads it as a run artifact.
 
+## Shared core (desktop and web)
+
+The written project targets a distributed, API-first platform with a React web
+UI over `libnormaliz`; the current deliverable is this desktop GUI. They are not
+in conflict: desktop and web are two front ends over one engine and one
+request/result contract.
+
+To keep that path open at near-zero cost, the GUI separates a UI-agnostic engine
+layer (build the input model, select `ConeProperty` goals, call `compute`, read
+results) from the Qt widgets. Today that layer calls `libnormaliz` in process;
+later the same request/result types can be serialized (JSON) and served by a
+computation service, with the desktop acting as an offline client and,
+optionally, a hybrid client that offloads large jobs to a remote backend.
+
 ## Current limitations
 
 - Input is fixed to the built-in 2cone example; the `.in` editor is not yet
