@@ -14,6 +14,10 @@ First working skeleton with cross-platform delivery.
 - Input editor wired to Normaliz's parser (`readNormalizInput`): computes on any
   `.in` input (cone, vertices, inequalities, equations, congruences, grading,
   ...), not just the built-in example.
+- File menu: New (size dialog), Open, Save, Save As; the window title tracks the
+  current file and unsaved changes.
+- Computation goals: Hilbert series and multiplicity added (alongside Hilbert
+  basis, extreme rays, support hyperplanes).
 - Off-thread computation (QtConcurrent) with responsive UI and status line.
 - Exception-safe worker: `NormalizException` shown as text, no crash.
 - Neutral high-contrast theme; WIN32 GUI subsystem (no console window).

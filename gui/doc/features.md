@@ -12,7 +12,10 @@ the roadmap toward a complete replacement.
 - Input editor for Normaliz `.in` text, parsed by Normaliz's own parser
   (`readNormalizInput`): every input type works (cone, vertices, inequalities,
   equations, congruences, grading, ...).
-- Computation goals: Hilbert basis, extreme rays, support hyperplanes.
+- File menu: New (size dialog), Open, Save, Save As; the window title tracks the
+  current file and unsaved changes.
+- Computation goals: Hilbert basis, extreme rays, support hyperplanes, Hilbert
+  series, multiplicity.
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
   the distributed backend is planned; the choice is already visible in the UI.
 - Computation runs off the GUI thread (QtConcurrent); UI stays responsive,
@@ -28,7 +31,8 @@ the roadmap toward a complete replacement.
 
 Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
-- File operations: Open, New (rows/cols dialog), Save, Save as, Print, Close.
+- File: Print and Close, plus an unsaved-changes prompt on exit
+  (New/Open/Save/Save As are done).
 - Run controls: Algorithm, Computational mode, Precision selectors; Stop/cancel
   with progress (`nmz_interrupted`).
 - Console/log tab: real-time verbose engine output.

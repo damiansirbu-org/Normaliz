@@ -82,6 +82,7 @@ optionally, a hybrid client that offloads large jobs to a remote backend.
 
 - `libnormaliz` is built NAKED (GMP only): no algebraic polyhedra (e-antic),
   integrals (CoCoALib), or automorphism groups (nauty).
-- Goals limited to Hilbert basis, extreme rays, support hyperplanes.
-- No file operations, run controls, console/log, or cancel yet (jNormaliz parity
-  is the next milestone).
+- Goals cover a useful subset (Hilbert basis, extreme rays, support hyperplanes,
+  Hilbert series, multiplicity); more `ConeProperty` targets remain.
+- No run controls (algorithm/mode/precision), console/log, or cancel yet
+  (further jNormaliz parity is the next milestone).

@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 #include <QFutureWatcher>
+#include <QString>
 #include <string>
 
 class QPlainTextEdit;
@@ -9,9 +10,9 @@ class QPushButton;
 class QCheckBox;
 class QRadioButton;
 
-// Clean 3-zone layout: input (.in) editor, computation-goal selector, output.
-// The computation runs off the GUI thread (QtConcurrent) and libnormaliz
-// exceptions are caught in the worker (none may reach the Qt event loop).
+// Clean 3-zone layout: input (.in) editor, computation-goal selector, output,
+// plus a File menu. The computation runs off the GUI thread (QtConcurrent) and
+// libnormaliz exceptions are caught in the worker (none may reach the event loop).
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -20,12 +21,19 @@ public:
 private slots:
     void startCompute();
     void computeFinished();
+    void newFile();
+    void openFile();
+    void saveFile();
+    void saveFileAs();
 
 private:
-    struct Goals { bool hilbert; bool extreme; bool support; };
+    struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult; };
     struct Result { bool ok = false; std::string text; };
     // Worker thread. Parses the .in text and computes; catches every exception.
     static Result runCompute(std::string inputText, Goals goals);
+
+    void buildMenu();
+    void updateTitle();
 
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;
@@ -33,7 +41,10 @@ private:
     QCheckBox* cbHilbert_;
     QCheckBox* cbExtreme_;
     QCheckBox* cbSupport_;
+    QCheckBox* cbHSeries_;
+    QCheckBox* cbMult_;
     QRadioButton* backendLocal_;
     QRadioButton* backendRemote_;
+    QString currentPath_;
     QFutureWatcher<Result> watcher_;
 };
