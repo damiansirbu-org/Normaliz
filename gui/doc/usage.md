@@ -21,16 +21,15 @@ One window, three areas plus a status bar:
 
 ## Run a computation
 
-1. Edit the input (the 2cone example is preloaded).
+1. Edit the input (the 2cone example is preloaded as a starting point).
 2. Tick the goals you want.
 3. Press Compute.
 
-The computation runs in the background; the status bar shows Computing... then
-Ready. Results appear in the Output area. On invalid input the status bar shows
-Error and the message is printed in Output (the app does not crash).
-
-Note: this build computes on the built-in 2cone example regardless of edits to
-the input editor; wiring the editor to the parser is the next step.
+The editor text is parsed by Normaliz's own parser, so any input type works
+(cone, vertices, inequalities, equations, congruences, grading, ...). The
+computation runs in the background; the status bar shows Computing... then Ready.
+Results appear in the Output area. On invalid input the status bar shows Error
+and the message is printed in Output (the app does not crash).
 
 ## Build from source
 

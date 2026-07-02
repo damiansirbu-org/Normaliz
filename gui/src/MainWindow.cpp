@@ -14,8 +14,10 @@
 
 #include <sstream>
 #include <vector>
+#include <map>
 
 #include "libnormaliz/cone.h"
+#include "libnormaliz/input.h"
 
 using namespace libnormaliz;
 
@@ -86,15 +88,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 // Worker thread. All exceptions are caught here; none may escape into Qt.
-MainWindow::Result MainWindow::runCompute(Goals g) {
+MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
     Result r;
     try {
-        // Input is fixed to the 2cone example for now; parsing the .in editor
-        // (readNormalizInput) is the next step.
-        std::vector<std::vector<mpz_class> > rays;
-        rays.push_back(std::vector<mpz_class>{1, 3});
-        rays.push_back(std::vector<mpz_class>{2, 1});
-        Cone<mpz_class> cone(Type::cone, rays);
+        // Parse the .in text with Normaliz's own parser (same path as the CLI):
+        // text -> InputMap<mpq_class> -> Cone<mpz_class>. Handles every input
+        // type (cone, vertices, inequalities, equations, congruences, grading...).
+        std::istringstream in(inputText);
+        OptionsHandler options;
+        std::map<NumParam::Param, long> num_param_input;
+        std::map<PolyParam::Param, std::vector<std::string> > poly_param_input;
+        renf_class_shared number_field = nullptr;
+        InputMap<mpq_class> input =
+            readNormalizInput<mpq_class>(in, options, num_param_input, poly_param_input, number_field);
+        Cone<mpz_class> cone(input);
 
         if (!(g.hilbert || g.extreme || g.support)) g.hilbert = true;
 
@@ -129,10 +136,12 @@ MainWindow::Result MainWindow::runCompute(Goals g) {
 
 void MainWindow::startCompute() {
     Goals g{ cbHilbert_->isChecked(), cbExtreme_->isChecked(), cbSupport_->isChecked() };
+    // Capture the editor text on the GUI thread; the worker must not touch widgets.
+    std::string inputText = input_->toPlainText().toStdString();
     compute_->setEnabled(false);
     statusBar()->showMessage("Computing...");
     output_->setPlainText("");
-    watcher_.setFuture(QtConcurrent::run(&MainWindow::runCompute, g));
+    watcher_.setFuture(QtConcurrent::run(&MainWindow::runCompute, inputText, g));
 }
 
 void MainWindow::computeFinished() {

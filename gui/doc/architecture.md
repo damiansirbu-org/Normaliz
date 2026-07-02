@@ -19,12 +19,16 @@ round-trip.
 
 The engine is called in process, not via the CLI:
 
-    input matrix  ->  Cone<mpz_class>(Type::cone, rows)
-                  ->  ConeProperties (HilbertBasis / ExtremeRays / SupportHyperplanes)
-                  ->  cone.compute(props)
-                  ->  getHilbertBasis() / getExtremeRays() / getSupportHyperplanes()
-                  ->  text in the output pane
+    .in text  ->  readNormalizInput<mpq_class>  ->  InputMap
+              ->  Cone<mpz_class>(input)
+              ->  ConeProperties (HilbertBasis / ExtremeRays / SupportHyperplanes)
+              ->  cone.compute(props)
+              ->  getHilbertBasis() / getExtremeRays() / getSupportHyperplanes()
+              ->  text in the output pane
 
+The editor text is parsed by Normaliz's own parser `readNormalizInput`
+(`source/input.cpp`), the same one the CLI uses, so every input type is
+supported (cone, vertices, inequalities, equations, congruences, grading, ...).
 Arithmetic is GMP (`mpz_class`): arbitrary precision, no overflow. The public
 API is `Cone<Integer>` in `source/libnormaliz/cone.h`; computation goals are the
 `ConeProperty` enum in `source/libnormaliz/cone_property.h`.
@@ -76,9 +80,8 @@ optionally, a hybrid client that offloads large jobs to a remote backend.
 
 ## Current limitations
 
-- Input is fixed to the built-in 2cone example; the `.in` editor is not yet
-  wired to the engine (planned: reuse `readNormalizInput` from
-  `source/input.cpp`).
 - `libnormaliz` is built NAKED (GMP only): no algebraic polyhedra (e-antic),
   integrals (CoCoALib), or automorphism groups (nauty).
 - Goals limited to Hilbert basis, extreme rays, support hyperplanes.
+- No file operations, run controls, console/log, or cancel yet (jNormaliz parity
+  is the next milestone).

@@ -24,7 +24,8 @@ private slots:
 private:
     struct Goals { bool hilbert; bool extreme; bool support; };
     struct Result { bool ok = false; std::string text; };
-    static Result runCompute(Goals goals);   // worker thread; catches everything
+    // Worker thread. Parses the .in text and computes; catches every exception.
+    static Result runCompute(std::string inputText, Goals goals);
 
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;

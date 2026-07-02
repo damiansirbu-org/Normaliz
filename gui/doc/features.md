@@ -9,7 +9,9 @@ the roadmap toward a complete replacement.
 - Native desktop GUI (Qt6 Widgets, C++); single window: input / goals / output.
 - Engine in process: links `libnormaliz` statically, calls `Cone<mpz_class>`
   directly - no `.in`/`.out` file round-trip.
-- Input editor for Normaliz `.in` text.
+- Input editor for Normaliz `.in` text, parsed by Normaliz's own parser
+  (`readNormalizInput`): every input type works (cone, vertices, inequalities,
+  equations, congruences, grading, ...).
 - Computation goals: Hilbert basis, extreme rays, support hyperplanes.
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
   the distributed backend is planned; the choice is already visible in the UI.
@@ -26,8 +28,6 @@ the roadmap toward a complete replacement.
 
 Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
-- Wire the `.in` editor to the engine (`readNormalizInput`): compute on any
-  input, not just the built-in example.
 - File operations: Open, New (rows/cols dialog), Save, Save as, Print, Close.
 - Run controls: Algorithm, Computational mode, Precision selectors; Stop/cancel
   with progress (`nmz_interrupted`).

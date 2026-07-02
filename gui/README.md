@@ -3,9 +3,10 @@
 Native desktop GUI for Normaliz, built as the `gui/` component of the Normaliz
 tree. Links `libnormaliz` statically and calls the compute engine in process.
 
-Status: skeleton. Computes Hilbert basis / extreme rays / support hyperplanes
-on the built-in 2cone example; cross-platform installers (Windows/Linux/macOS)
-are produced by CI (`.github/workflows/gui-release.yml`).
+Status: early. Parses the `.in` editor with Normaliz's own parser and computes
+Hilbert basis / extreme rays / support hyperplanes on any input; cross-platform
+installers (Windows/Linux/macOS) are produced by CI
+(`.github/workflows/gui-release.yml`).
 
 ## Documentation
 
