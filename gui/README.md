@@ -9,8 +9,10 @@ are produced by CI (`.github/workflows/gui-release.yml`).
 
 ## Documentation
 
+- `doc/features.md` - delivered and planned features
 - `doc/architecture.md` - components, engine call path, threading, packaging
 - `doc/usage.md` - install, window, running a computation, build from source
+- `CHANGELOG.md` - version history
 
 ## Build
 
