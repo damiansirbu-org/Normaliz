@@ -12,6 +12,7 @@ installers (Windows/Linux/macOS) are produced by CI
 ## Documentation
 
 - `doc/features.md` - delivered and planned features
+- `doc/coverage.md` - parity checklist vs jNormaliz (what is covered / remaining)
 - `doc/architecture.md` - components, engine call path, threading, packaging
 - `doc/usage.md` - install, window, running a computation, build from source
 - `CHANGELOG.md` - version history
