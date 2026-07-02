@@ -31,6 +31,8 @@ First working skeleton with cross-platform delivery.
 - Tabbed panel: Output / Console / Options. The Console tab shows the captured
   libnormaliz verbose output; the Options tab has thread-count and font-size
   controls. Help gains a Mathematical-background dialog.
+- File Close and Print; a Help usage dialog; a memory gauge in the status bar
+  (Windows/Linux). This completes essentially the full jNormaliz feature set.
 - Off-thread computation (QtConcurrent) with responsive UI and status line.
 - Exception-safe worker: `NormalizException` shown as text, no crash.
 - Neutral high-contrast theme; WIN32 GUI subsystem (no console window).

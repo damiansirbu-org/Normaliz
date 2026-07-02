@@ -12,8 +12,8 @@ the roadmap toward a complete replacement.
 - Input editor for Normaliz `.in` text, parsed by Normaliz's own parser
   (`readNormalizInput`): every input type works (cone, vertices, inequalities,
   equations, congruences, grading, ...).
-- File menu: New (size dialog), Open, Save, Save As; the window title tracks the
-  current file and unsaved changes.
+- File menu: New (size dialog), Open, Close, Save, Save As, Print; the window
+  title tracks the current file and unsaved changes.
 - Computation goals: Hilbert basis, extreme rays, support hyperplanes, Hilbert
   series, multiplicity, volume, lattice points, class group.
 - Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
@@ -23,7 +23,7 @@ the roadmap toward a complete replacement.
 - Computation runs off the GUI thread (QtConcurrent); UI stays responsive,
   status shows Computing / Ready / Error.
 - Stop button cancels a running computation (nmz_interrupted); status bar shows
-  elapsed time.
+  elapsed time and memory usage.
 - Toolbar: Algorithm (Default/Primal/Dual), Mode (Goals only / DefaultMode),
   Precision (Default / BigInt), mapped to ConeProperty flags.
 - Tabbed panel: Output / Console (captured libnormaliz verbose log) / Options
@@ -39,8 +39,6 @@ the roadmap toward a complete replacement.
 
 Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
-- File: Print and Close, plus an unsaved-changes prompt on exit
-  (New/Open/Save/Save As are done).
 - Live-streaming Console (currently the verbose log is shown when the run ends).
 - Output-file options (`.out/.gen/.inv/.typ/.cst`, triangulation, Stanley) - not
   applicable to the in-process engine.

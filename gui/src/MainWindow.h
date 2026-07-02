@@ -34,8 +34,10 @@ private slots:
     void computeFinished();
     void newFile();
     void openFile();
+    void closeFile();
     void saveFile();
     void saveFileAs();
+    void printCurrent();
 
 private:
     struct Goals { bool hilbert; bool extreme; bool support; bool hseries; bool mult;
@@ -70,7 +72,9 @@ private:
     QRadioButton* backendLocal_;
     QRadioButton* backendRemote_;
     QLabel* elapsedLabel_;
+    QLabel* memLabel_;
     QTimer* tick_;
+    QTimer* memTick_;
     QElapsedTimer elapsed_;
     QString currentPath_;
     QFutureWatcher<Result> watcher_;

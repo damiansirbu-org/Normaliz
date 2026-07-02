@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent PrintSupport)
 # Optional: libnormaliz uses OpenMP on Windows/Linux, but on macOS (Apple clang
 # has no -fopenmp) it is built without it, so the GUI must not require it either.
 find_package(OpenMP)
@@ -39,6 +39,7 @@ target_include_directories(normaliz-gui PRIVATE "${NORMALIZ_SRC}")
 target_link_libraries(normaliz-gui PRIVATE
     Qt6::Widgets
     Qt6::Concurrent
+    Qt6::PrintSupport
     "${NORMALIZ_LIB}"
     gmpxx
     gmp
@@ -46,6 +47,11 @@ target_link_libraries(normaliz-gui PRIVATE
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(normaliz-gui PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+# Windows: psapi provides GetProcessMemoryInfo for the status-bar memory gauge.
+if(WIN32)
+    target_link_libraries(normaliz-gui PRIVATE psapi)
 endif()
 
 # On Windows, bundle Qt + all transitive MinGW DLLs next to the exe after each

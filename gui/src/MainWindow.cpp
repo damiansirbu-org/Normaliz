@@ -32,6 +32,8 @@
 #include <QToolBar>
 #include <QComboBox>
 #include <QFont>
+#include <QPrinter>
+#include <QPrintDialog>
 #include <QtConcurrent>
 
 #include <sstream>
@@ -44,6 +46,20 @@
 #include "libnormaliz/HilbertSeries.h"
 #include "libnormaliz/normaliz_exception.h"
 #include "libnormaliz/general.h"
+
+#if defined(_WIN32)
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
+#  include <windows.h>
+#  include <psapi.h>
+#elif defined(__linux__)
+#  include <cstdio>
+#  include <unistd.h>
+#endif
 
 using namespace libnormaliz;
 
@@ -61,6 +77,26 @@ struct VerboseCapture {
         setVerboseOutput(std::cout);
     }
 };
+
+// Resident memory of this process, for the status-bar gauge (empty on macOS).
+QString processMemoryText() {
+#if defined(_WIN32)
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+        return QString("Mem: %1 MB").arg(pmc.WorkingSetSize / (1024 * 1024));
+    return QString();
+#elif defined(__linux__)
+    long rssPages = 0, totalPages = 0;
+    if (FILE* f = std::fopen("/proc/self/statm", "r")) {
+        if (std::fscanf(f, "%ld %ld", &totalPages, &rssPages) != 2) rssPages = 0;
+        std::fclose(f);
+    }
+    long bytes = rssPages * sysconf(_SC_PAGESIZE);
+    return QString("Mem: %1 MB").arg(bytes / (1024 * 1024));
+#else
+    return QString();
+#endif
+}
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -178,11 +214,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     precCombo_->setToolTip("BigInt forces arbitrary-precision arithmetic");
     tb->addWidget(precCombo_);
 
+    memLabel_ = new QLabel();
+    statusBar()->addPermanentWidget(memLabel_);
     elapsedLabel_ = new QLabel("Elapsed: 0.0s");
     statusBar()->addPermanentWidget(elapsedLabel_);
     statusBar()->showMessage("Ready");
     tick_ = new QTimer(this);
     tick_->setInterval(100);
+    memTick_ = new QTimer(this);
+    memTick_->setInterval(1000);
 
     input_->document()->setModified(false);   // the preloaded example is not "unsaved"
     updateTitle();
@@ -193,6 +233,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(tick_, &QTimer::timeout, this, [this] {
         elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
     });
+    connect(memTick_, &QTimer::timeout, this, [this] { memLabel_->setText(processMemoryText()); });
+    memLabel_->setText(processMemoryText());
+    memTick_->start();
     connect(fontSpin_, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pt) {
         for (QPlainTextEdit* w : {input_, output_, console_}) {
             QFont f = w->font();
@@ -210,10 +253,14 @@ void MainWindow::buildMenu() {
     aNew->setShortcut(QKeySequence::New);
     QAction* aOpen = fileMenu->addAction("&Open...", this, &MainWindow::openFile);
     aOpen->setShortcut(QKeySequence::Open);
+    fileMenu->addAction("&Close", this, &MainWindow::closeFile);
     QAction* aSave = fileMenu->addAction("&Save", this, &MainWindow::saveFile);
     aSave->setShortcut(QKeySequence::Save);
     QAction* aSaveAs = fileMenu->addAction("Save &As...", this, &MainWindow::saveFileAs);
     aSaveAs->setShortcut(QKeySequence::SaveAs);
+    fileMenu->addSeparator();
+    QAction* aPrint = fileMenu->addAction("&Print...", this, &MainWindow::printCurrent);
+    aPrint->setShortcut(QKeySequence::Print);
     fileMenu->addSeparator();
     QAction* aExit = fileMenu->addAction("E&xit", this, &QWidget::close);
     aExit->setShortcut(QKeySequence::Quit);
@@ -235,6 +282,17 @@ void MainWindow::buildMenu() {
     aSelAll->setShortcut(QKeySequence::SelectAll);
 
     QMenu* helpMenu = menuBar()->addMenu("&Help");
+    helpMenu->addAction("&Help", this, [this] {
+        QMessageBox::information(this, "Normaliz GUI - Help",
+            "<b>How to use</b><br>"
+            "1. Enter a Normaliz input in the Input (.in) editor (or File &gt; Open).<br>"
+            "2. Tick the computation goals.<br>"
+            "3. Press Compute; use Stop to cancel.<br><br>"
+            "The toolbar sets algorithm, mode and precision. The Console tab shows "
+            "the engine log; the Options tab sets threads and font size.<br><br>"
+            "Full documentation is in the gui/doc folder.");
+    });
+    helpMenu->addSeparator();
     helpMenu->addAction("Normaliz &website", this, [] {
         QDesktopServices::openUrl(QUrl("https://github.com/Normaliz/Normaliz"));
     });
@@ -350,6 +408,24 @@ void MainWindow::saveFileAs() {
     if (path.isEmpty()) return;
     currentPath_ = path;
     saveFile();
+}
+
+void MainWindow::closeFile() {
+    if (!maybeSave()) return;
+    input_->clear();
+    output_->clear();
+    console_->clear();
+    currentPath_.clear();
+    input_->document()->setModified(false);
+    updateTitle();
+    statusBar()->showMessage("Closed");
+}
+
+void MainWindow::printCurrent() {
+    QPrinter printer;
+    QPrintDialog dlg(&printer, this);
+    if (dlg.exec() != QDialog::Accepted) return;
+    input_->print(&printer);   // print the .in input
 }
 
 // Worker thread. All exceptions are caught here; none may escape into Qt.

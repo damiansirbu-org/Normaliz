@@ -11,10 +11,10 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 |---|---|---|
 | Open | [x] | QFileDialog, reads .in into the editor |
 | New (rows/cols dialog) | [x] | size dialog builds a zero-filled cone template |
-| Close | [ ] | close the current input |
+| Close | [x] | clears the input (with unsaved-changes prompt) |
 | Save | [x] | writes the editor to file |
 | Save as | [x] | getSaveFileName |
-| Print | [ ] | print the current view |
+| Print | [x] | prints the input via QPrinter |
 | Exit | [x] | prompts to save when modified |
 
 ## Edit menu
@@ -65,14 +65,14 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 | jNormaliz | Status | Notes |
 |---|---|---|
 | Elapsed time | [x] | timer in the status bar |
-| Physical memory gauge | [ ] | process memory |
+| Physical memory gauge | [x] | process RSS in the status bar (Windows/Linux) |
 | Running indicator | [x] | Computing/Stopping/Ready status + Stop button |
 
 ## Help menu
 
 | jNormaliz | Status | Notes |
 |---|---|---|
-| Help | [ ] | this documentation |
+| Help | [x] | usage dialog |
 | Open Normaliz manual | [x] | opens the online manual PDF |
 | Open Normaliz website | [x] | opens the Normaliz GitHub |
 | Mathematical background | [x] | dialog with a short description and links |
@@ -109,11 +109,13 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 ## Summary
 
-Parity done: File (Open/New/Save/Save As/Exit), Edit menu, Run and Stop, the
-toolbar (algorithm/mode/precision), the Help menu (website/manual/math
-background/About), the Output/Console/Options tabs (thread control, font size),
-eight computation goals, elapsed-time status. Remaining for 100% parity:
-Close/Print, the memory gauge, Help "this documentation", Ignore-in-file and
-NmzIntegrate options, and more computation goals. Beyond jNormaliz: in-process
+Parity: essentially complete. Done - the full File menu (New/Open/Close/Save/Save
+As/Print/Exit), Edit menu, Run/Stop, the toolbar (algorithm/mode/precision), the
+Help menu (help/website/manual/math background/About), the Output/Console/Options
+tabs (thread control, font size), eight computation goals, and the status line
+(elapsed time, memory gauge). Not applicable to this build: Ignore-in-file and
+NmzIntegrate options (NmzIntegrate needs CoCoALib; output-file options are moot
+for the in-process engine). Refinements left: live-streaming Console (the log is
+shown on completion) and further computation goals. Beyond jNormaliz: in-process
 engine, installers and the Local backend are done; visualization, observability,
 autotuning and provenance are the research pillars.
