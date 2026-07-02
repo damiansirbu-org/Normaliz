@@ -1,9 +1,112 @@
 #include <QApplication>
+#include <QTimer>
+#include <string>
 #include "MainWindow.h"
+
+// Neutral, high-contrast light theme: light-gray canvas, white cards with a
+// defined gray border and crisp (barely rounded) corners. Contrast comes from
+// dark near-black elements (the Compute button, checked boxes, titles) rather
+// than a colour accent. Segoe UI for chrome, monospace for the math I/O.
+static const char* kStyle = R"QSS(
+* {
+    font-family: "Segoe UI";
+    font-size: 10pt;
+    color: #24292f;
+}
+QMainWindow, QWidget {
+    background: #f4f5f7;
+}
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #d0d4d9;
+    border-radius: 3px;
+    margin-top: 14px;
+    padding: 12px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 4px;
+    color: #24292f;
+    font-weight: 600;
+}
+QPlainTextEdit {
+    background: #ffffff;
+    border: 1px solid #d0d4d9;
+    border-radius: 3px;
+    padding: 8px;
+    font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", monospace;
+    font-size: 10pt;
+    selection-background-color: #d7dbe0;
+    selection-color: #24292f;
+}
+QPushButton {
+    background: #f6f8fa;
+    border: 1px solid #ccd1d6;
+    border-radius: 3px;
+    padding: 6px 14px;
+}
+QPushButton:hover {
+    background: #eceef1;
+}
+QPushButton#compute {
+    background: #2f363d;
+    border: 1px solid #2f363d;
+    border-radius: 3px;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 9px 20px;
+}
+QPushButton#compute:hover {
+    background: #3a424a;
+}
+QPushButton#compute:disabled {
+    background: #a9b0b8;
+    border-color: #a9b0b8;
+}
+QCheckBox {
+    background: transparent;
+    spacing: 8px;
+    padding: 4px 2px;
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccd1d6;
+    border-radius: 2px;
+    background: #ffffff;
+}
+QCheckBox::indicator:hover {
+    border-color: #57606a;
+}
+QCheckBox::indicator:checked {
+    background: #2f363d;
+    border-color: #2f363d;
+}
+QStatusBar {
+    background: #f4f5f7;
+    color: #57606a;
+}
+)QSS";
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
+    app.setStyleSheet(kStyle);
+
     MainWindow w;
+    w.resize(740, 560);
     w.show();
+
+    // Hidden: `--shot <path>` renders the window to a PNG and exits.
+    for (int i = 1; i + 1 < argc; ++i) {
+        if (std::string(argv[i]) == "--shot") {
+            QString path = QString::fromLocal8Bit(argv[i + 1]);
+            QTimer::singleShot(500, [&w, path]() {
+                w.grab().save(path);
+                QApplication::quit();
+            });
+        }
+    }
+
     return app.exec();
 }

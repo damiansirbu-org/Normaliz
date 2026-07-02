@@ -4,16 +4,13 @@
 #include <QFutureWatcher>
 #include <string>
 
-class QTextEdit;
+class QPlainTextEdit;
 class QPushButton;
+class QCheckBox;
 
-// Skeleton GUI. Computes the Hilbert basis of the 2cone example in-process via
-// Cone<mpz_class>. Two robustness properties proven necessary by review:
-//   - libnormaliz throws NormalizException (bad input, missing optional lib, ...);
-//     an exception must NEVER escape into Qt (undefined behaviour), so the worker
-//     catches everything and returns a Result.
-//   - compute() can run for a long time, so it runs off the GUI thread via
-//     QtConcurrent and the UI updates when the QFutureWatcher finishes.
+// Clean 3-zone layout: input (.in) editor, computation-goal selector, output.
+// The computation runs off the GUI thread (QtConcurrent) and libnormaliz
+// exceptions are caught in the worker (none may reach the Qt event loop).
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -24,14 +21,15 @@ private slots:
     void computeFinished();
 
 private:
-    struct Result {
-        bool ok = false;
-        std::string text;  // output on success, error message on failure
-    };
-    // Runs in a worker thread. Catches ALL exceptions - none may reach Qt.
-    static Result runHilbertBasis();
+    struct Goals { bool hilbert; bool extreme; bool support; };
+    struct Result { bool ok = false; std::string text; };
+    static Result runCompute(Goals goals);   // worker thread; catches everything
 
-    QPushButton* btn_;
-    QTextEdit* output_;
+    QPlainTextEdit* input_;
+    QPlainTextEdit* output_;
+    QPushButton* compute_;
+    QCheckBox* cbHilbert_;
+    QCheckBox* cbExtreme_;
+    QCheckBox* cbSupport_;
     QFutureWatcher<Result> watcher_;
 };

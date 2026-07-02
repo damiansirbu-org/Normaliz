@@ -23,8 +23,9 @@ if(NOT NORMALIZ_LIB)
         "Build it first (in ../source): make -f Makefile.classic NAKED=yes")
 endif()
 
-# MACOSX_BUNDLE builds a .app on macOS (needed for macdeployqt); ignored elsewhere.
-add_executable(normaliz-gui MACOSX_BUNDLE
+# WIN32 builds a GUI-subsystem app on Windows (no console window; Qt provides the
+# WinMain entry point). MACOSX_BUNDLE builds a .app on macOS. Both ignored elsewhere.
+add_executable(normaliz-gui WIN32 MACOSX_BUNDLE
     src/main.cpp
     src/MainWindow.cpp
 )
@@ -45,4 +46,13 @@ target_link_libraries(normaliz-gui PRIVATE
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(normaliz-gui PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+# On Windows, bundle Qt + all transitive MinGW DLLs next to the exe after each
+# build so it runs standalone (double-click) without /mingw64/bin on PATH.
+if(WIN32)
+    add_custom_command(TARGET normaliz-gui POST_BUILD
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/scripts/win-deploy.sh" "$<TARGET_FILE:normaliz-gui>"
+        VERBATIM
+        COMMENT "Bundling Qt + MinGW DLLs for standalone run")
 endif()
