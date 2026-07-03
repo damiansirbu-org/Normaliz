@@ -92,7 +92,7 @@ jobs:
         run: |
           # No reliable distro package with the nauty/ header layout + TLS the
           # classic Makefile expects; build it into source/local (= OPT_LIB_ROOT).
-          export NMZ_PREFIX="$PWD/source/local"
+          export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
       - name: Build libnormaliz.a (nauty enabled)
@@ -161,7 +161,7 @@ jobs:
 
       - name: Build nauty (canonical, TLS)
         run: |
-          export NMZ_PREFIX="$PWD/source/local"
+          export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
       - name: Build libnormaliz.a (static, nauty enabled)
