@@ -40,9 +40,13 @@ jobs:
       - name: Build FLINT 3.0.1 + e-antic (algebraic)
         run: |
           # Pinned FLINT 3.0.1 + e-antic 2.0.2 into <repo>/local (OPT_LIB_ROOT).
-          # FLINT uses the MSYS2 mpfr; e-antic links FLINT statically. The scripts'
-          # msys branches (randtest rename, --disable-dependency-tracking) apply
-          # because the setup-msys2 shell reports OSTYPE=msys.
+          # FLINT uses the MSYS2 mpfr; e-antic links FLINT statically.
+          # OSTYPE=msys is forced: the setup-msys2 shell does not set it, so
+          # common.sh would otherwise add ELF-only LDFLAGS (--enable-new-dtags,
+          # -rpath) that mingw ld rejects, and the scripts' msys branches
+          # (flint --with-mpfr=/mingw64, e-antic randtest rename + dep-tracking)
+          # would not apply.
+          export OSTYPE=msys
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_flint.sh
           ./install_scripts_opt/install_nmz_e-antic.sh
