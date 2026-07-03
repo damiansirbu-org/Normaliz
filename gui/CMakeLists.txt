@@ -36,11 +36,25 @@ target_compile_definitions(normaliz-gui PRIVATE NMZ_MAKEFILE_CLASSIC)
 
 target_include_directories(normaliz-gui PRIVATE "${NORMALIZ_SRC}")
 
+# nauty provides the graph-automorphism engine. libnormaliz (built non-NAKED with
+# NMZ_NAUTY) references nauty symbols, so the GUI must link it too.
+# Windows/MSYS2: nauty is a system package under CMAKE_PREFIX_PATH (/mingw64).
+# Linux/macOS CI: nauty is built by install_scripts_opt/install_nmz_nauty.sh into
+# source/local (the same OPT_LIB_ROOT the classic Makefile links against).
+find_library(NAUTY_LIB NAMES nauty
+    PATHS "${CMAKE_PREFIX_PATH}/lib" "${NORMALIZ_SRC}/local/lib")
+if(NOT NAUTY_LIB)
+    message(FATAL_ERROR
+        "nauty not found. Install it (MSYS2: pacman -S mingw-w64-x86_64-nauty; "
+        "Debian: libnauty2-dev; brew: nauty) or rebuild libnormaliz with NAUTY=no.")
+endif()
+
 target_link_libraries(normaliz-gui PRIVATE
     Qt6::Widgets
     Qt6::Concurrent
     Qt6::PrintSupport
     "${NORMALIZ_LIB}"
+    "${NAUTY_LIB}"
     gmpxx
     gmp
 )

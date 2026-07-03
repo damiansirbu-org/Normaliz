@@ -128,6 +128,7 @@ const std::vector<GoalDef>& goalTable() {
         {ConeProperty::IsPointed,           "Is pointed",            false},
         {ConeProperty::IsGorenstein,        "Is Gorenstein",         false},
         {ConeProperty::IsDeg1ExtremeRays,   "Deg-1 extreme rays",    false},
+        {ConeProperty::Automorphisms,       "Automorphism group",    false},
     };
     return t;
 }
@@ -173,6 +174,18 @@ std::string formatGoal(Cone<mpz_class>& cone, ConeProperty::Enum p) {
         case ConeProperty::IsPointed:           o << "pointed: " << (cone.isPointed() ? "yes" : "no") << "\n\n"; break;
         case ConeProperty::IsGorenstein:        o << "Gorenstein: " << (cone.isGorenstein() ? "yes" : "no") << "\n\n"; break;
         case ConeProperty::IsDeg1ExtremeRays:   o << "degree-1 extreme rays: " << (cone.isDeg1ExtremeRays() ? "yes" : "no") << "\n\n"; break;
+        case ConeProperty::Automorphisms: {
+            const AutomorphismGroup<mpz_class>& A = cone.getAutomorphismGroup();
+            const std::vector<std::vector<key_t> >& perms = A.getGensPerms();
+            o << "automorphism group order: " << A.getOrder() << "\n";
+            o << perms.size() << " generating permutation(s) of the extreme rays:\n";
+            for (const std::vector<key_t>& perm : perms) {
+                for (key_t x : perm) o << x << " ";
+                o << "\n";
+            }
+            o << "\n";
+            break;
+        }
         default:                                o << "computed.\n\n"; break;
     }
     return o.str();

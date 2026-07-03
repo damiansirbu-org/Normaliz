@@ -3,6 +3,26 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.2.0] - 2026-07-03
+
+First step beyond the NAKED engine: optional-library computations begin with nauty.
+
+### Added
+- Automorphism-group computation goal (`ConeProperty::Automorphisms`): reports the
+  group order and the generating permutations of the extreme rays. Requires
+  `libnormaliz` built non-NAKED with nauty; verified on the R^3 positive orthant
+  (order 6 = |S_3|).
+- `libnormaliz` now built with nauty enabled (cocoa / e-antic / flint / hash-library
+  still off). CMake links nauty; the GUI must link it because the archive references
+  nauty symbols.
+- CI builds nauty per platform: MSYS2 package on Windows; the canonical
+  `install_scripts_opt/install_nmz_nauty.sh` (TLS build) into `source/local` on
+  Linux and macOS. The Windows installer bundles `libnauty*.dll` via `win-deploy.sh`.
+
+### Changed
+- Toolbar Algorithm / Mode / Precision selectors now render the native drop-down
+  arrow and a beveled button, so they read as dropdowns instead of flat fields.
+
 ## [0.1.0] - 2026-07-02
 
 First working skeleton with cross-platform delivery.

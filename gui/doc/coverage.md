@@ -84,7 +84,7 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 | Goal | Status | Notes |
 |---|---|---|
-21 goals are offered through a goal table (add a ConeProperty + a formatGoal case).
+22 goals are offered through a goal table (add a ConeProperty + a formatGoal case).
 
 | Hilbert basis, extreme rays, support hyperplanes | [x] | matrices |
 | Module generators, degree-1 elements, maximal subspace | [x] | matrices |
@@ -93,7 +93,8 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 | Class group, grading, dehomogenization | [x] | vectors |
 | Rank, embedding dim, recession rank | [x] | scalars |
 | Is pointed / Gorenstein / deg-1 extreme rays | [x] | boolean tests |
-| Algebraic polyhedra, integrals, automorphism groups | [ ] | need the full (non-NAKED) libnormaliz (e-antic / CoCoA / nauty) |
+| Automorphism groups | [x] | nauty enabled; group order + generating permutations |
+| Algebraic polyhedra, integrals | [ ] | still need e-antic / CoCoA (non-NAKED) |
 
 ## Beyond jNormaliz (what jNormaliz did not cover)
 

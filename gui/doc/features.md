@@ -14,11 +14,12 @@ the roadmap toward a complete replacement.
   equations, congruences, grading, ...).
 - File menu: New (size dialog), Open, Close, Save, Save As, Print; the window
   title tracks the current file and unsaved changes.
-- 21 computation goals (scrollable): Hilbert basis, extreme rays, support
+- 22 computation goals (scrollable): Hilbert basis, extreme rays, support
   hyperplanes, module generators, degree-1 elements, maximal subspace, Hilbert
   and Ehrhart series, multiplicity, volume, lattice points, triangulation size,
   class group, grading, dehomogenization, rank, embedding dimension, recession
-  rank, and is-pointed / is-Gorenstein / deg-1-extreme-rays tests.
+  rank, the is-pointed / is-Gorenstein / deg-1-extreme-rays tests, and the
+  automorphism group (order + generating permutations, via nauty).
 - Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
   website, manual, About).
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
@@ -45,9 +46,9 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 - Live-streaming Console (currently the verbose log is shown when the run ends).
 - Output-file options (`.out/.gen/.inv/.typ/.cst`, triangulation, Stanley) - not
   applicable to the in-process engine.
-- Full `libnormaliz` build (non-NAKED) to reach the rest of the engine:
-  algebraic polyhedra (e-antic), integrals / weighted Ehrhart (CoCoALib),
-  automorphism groups (nauty).
+- Fuller `libnormaliz` build to reach the rest of the engine: nauty (automorphism
+  groups) is enabled; still pending are e-antic (algebraic polyhedra) and CoCoALib
+  (integrals / weighted Ehrhart).
 - Structured output: matrices in tables, series as text; export.
 - NmzIntegrate: generalized Ehrhart series, quasipolynomial leading
   coefficient, Lebesgue integral (needs CoCoALib).

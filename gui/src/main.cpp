@@ -156,14 +156,13 @@ QToolBar {
 }
 QComboBox {
     background: #ffffff;
-    border: 1px solid #ccd1d6;
+    border: 1px solid #b7bdc4;
     border-radius: 3px;
     padding: 3px 8px;
-    min-width: 84px;
+    min-width: 96px;
 }
-QComboBox::drop-down {
-    border: none;
-    width: 18px;
+QComboBox:hover {
+    border: 1px solid #7a8894;
 }
 QComboBox QAbstractItemView {
     background: #ffffff;
