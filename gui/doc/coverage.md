@@ -94,7 +94,7 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 | Rank, embedding dim, recession rank | [x] | scalars |
 | Is pointed / Gorenstein / deg-1 extreme rays | [x] | boolean tests |
 | Automorphism groups | [x] | nauty enabled; group order + generating permutations |
-| Algebraic polyhedra (renf) | [~] | e-antic enabled in the engine and verified (dodecahedron over Q(sqrt5)); GUI algebraic-input path pending |
+| Algebraic polyhedra (renf) | [x] | e-antic; number_field input auto-dispatches to Cone<renf_elem_class> in the GUI and computes the geometric goals (volume, support hyperplanes, extreme rays, ...); verified on the dodecahedron over Q(sqrt5) |
 | Integrals / weighted Ehrhart | [ ] | still need CoCoALib (non-NAKED) |
 
 ## Beyond jNormaliz (what jNormaliz did not cover)

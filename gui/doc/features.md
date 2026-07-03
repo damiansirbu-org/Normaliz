@@ -20,6 +20,9 @@ the roadmap toward a complete replacement.
   class group, grading, dehomogenization, rank, embedding dimension, recession
   rank, the is-pointed / is-Gorenstein / deg-1-extreme-rays tests, and the
   automorphism group (order + generating permutations, via nauty).
+- Algebraic polyhedra: `number_field` input auto-dispatches to the e-antic
+  (real embedded number field) engine and computes the geometric goals -
+  volume (as an exact algebraic value), support hyperplanes, extreme rays, etc.
 - Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
   website, manual, About).
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -
@@ -47,7 +50,7 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 - Output-file options (`.out/.gen/.inv/.typ/.cst`, triangulation, Stanley) - not
   applicable to the in-process engine.
 - Fuller `libnormaliz` build to reach the rest of the engine: nauty (automorphism
-  groups) is enabled; still pending are e-antic (algebraic polyhedra) and CoCoALib
+  groups) and e-antic (algebraic polyhedra) are enabled; still pending is CoCoALib
   (integrals / weighted Ehrhart).
 - Structured output: matrices in tables, series as text; export.
 - NmzIntegrate: generalized Ehrhart series, quasipolynomial leading
