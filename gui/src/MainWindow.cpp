@@ -176,11 +176,13 @@ std::string formatGoal(Cone<mpz_class>& cone, ConeProperty::Enum p) {
         case ConeProperty::IsDeg1ExtremeRays:   o << "degree-1 extreme rays: " << (cone.isDeg1ExtremeRays() ? "yes" : "no") << "\n\n"; break;
         case ConeProperty::Automorphisms: {
             const AutomorphismGroup<mpz_class>& A = cone.getAutomorphismGroup();
-            const std::vector<std::vector<key_t> >& perms = A.getGensPerms();
+            // libnormaliz:: qualifier: key_t is also a POSIX type (<sys/types.h>)
+            // on Linux/macOS, so unqualified it is ambiguous under using-namespace.
+            const std::vector<std::vector<libnormaliz::key_t> >& perms = A.getGensPerms();
             o << "automorphism group order: " << A.getOrder() << "\n";
             o << perms.size() << " generating permutation(s) of the extreme rays:\n";
-            for (const std::vector<key_t>& perm : perms) {
-                for (key_t x : perm) o << x << " ";
+            for (const std::vector<libnormaliz::key_t>& perm : perms) {
+                for (libnormaliz::key_t x : perm) o << x << " ";
                 o << "\n";
             }
             o << "\n";
