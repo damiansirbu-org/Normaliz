@@ -30,11 +30,17 @@ add_executable(normaliz-gui WIN32 MACOSX_BUNDLE
     src/MainWindow.cpp
 )
 
-# libnormaliz headers were compiled in the "classic makefile" mode (no nmz_config.h,
-# no optional libraries). Match that when including cone.h here.
-target_compile_definitions(normaliz-gui PRIVATE NMZ_MAKEFILE_CLASSIC)
+# Match the optional-library defines libnormaliz.a was built with. ENFNORMALIZ is
+# ABI-critical: with it, general.h maps renf_elem_class to eantic's class; without,
+# to `long`. Cone<Integer> has a renf_elem_class member, so the GUI MUST compile
+# with the same define as the archive or the object layout mismatches.
+target_compile_definitions(normaliz-gui PRIVATE NMZ_MAKEFILE_CLASSIC ENFNORMALIZ NMZ_FLINT)
 
-target_include_directories(normaliz-gui PRIVATE "${NORMALIZ_SRC}")
+# <repo>/local/include first: it holds e-antic's headers and the pinned FLINT 3.0.1
+# headers, which must win over any newer system FLINT.
+target_include_directories(normaliz-gui PRIVATE
+    "${NORMALIZ_SRC}/../local/include"
+    "${NORMALIZ_SRC}")
 
 # nauty provides the graph-automorphism engine. libnormaliz (built non-NAKED with
 # NMZ_NAUTY) references nauty symbols, so the GUI must link it too.
@@ -50,12 +56,45 @@ if(NOT NAUTY_LIB)
         "Debian: libnauty2-dev; brew: nauty) or rebuild libnormaliz with NAUTY=no.")
 endif()
 
+# e-antic (algebraic / renf) and its FLINT chain, built into <repo>/local by
+# install_nmz_flint.sh + install_nmz_e-antic.sh. libnormaliz (ENFNORMALIZ) links
+# eanticxx -> eantic -> flint -> mpfr -> gmp, so the GUI must link them in order.
+# e-antic on Windows marks its API dllimport (no static escape), so link the
+# import libs and let win-deploy.sh bundle libeantic*-3.dll. FLINT is static
+# (built --disable-shared), so find_library picks libflint.a on its own.
+# local-only (NO_DEFAULT_PATH): libnormaliz and e-antic were built against the
+# pinned FLINT 3.0.1 in <repo>/local; a newer system FLINT (MSYS2 ships 3.5) must
+# not be picked, or its differing struct layout corrupts the shared archive.
+# On Linux/macOS e-antic's headers use visibility attributes (not dllimport), so
+# link it statically -> the AppImage/dmg need no libeantic .so/.dylib bundled.
+# On Windows e-antic marks its API dllimport, so the import lib + DLL are required.
+if(NOT WIN32)
+    set(_nmz_saved_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif()
+find_library(EANTICXX_LIB NAMES eanticxx PATHS "${NORMALIZ_SRC}/../local/lib" NO_DEFAULT_PATH)
+find_library(EANTIC_LIB   NAMES eantic   PATHS "${NORMALIZ_SRC}/../local/lib" NO_DEFAULT_PATH)
+find_library(FLINT_LIB    NAMES flint    PATHS "${NORMALIZ_SRC}/../local/lib" NO_DEFAULT_PATH)
+if(NOT WIN32)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_nmz_saved_suffixes})
+endif()
+find_library(MPFR_LIB     NAMES mpfr     PATHS "${CMAKE_PREFIX_PATH}/lib")
+if(NOT (EANTICXX_LIB AND EANTIC_LIB AND FLINT_LIB AND MPFR_LIB))
+    message(FATAL_ERROR
+        "e-antic / FLINT / MPFR not found. Build them into <repo>/local first: "
+        "install_scripts_opt/install_nmz_flint.sh + install_nmz_e-antic.sh.")
+endif()
+
 target_link_libraries(normaliz-gui PRIVATE
     Qt6::Widgets
     Qt6::Concurrent
     Qt6::PrintSupport
     "${NORMALIZ_LIB}"
     "${NAUTY_LIB}"
+    "${EANTICXX_LIB}"
+    "${EANTIC_LIB}"
+    "${FLINT_LIB}"
+    "${MPFR_LIB}"
     gmpxx
     gmp
 )

@@ -3,6 +3,32 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.3.0] - 2026-07-03
+
+e-antic (algebraic / real embedded number fields) enabled in the engine and build.
+
+### Added
+- `libnormaliz` now built with ENFNORMALIZ (e-antic) + FLINT, on top of nauty. The
+  pinned FLINT 3.0.1 + e-antic 2.0.2 are built into `<repo>/local` by
+  `install_nmz_flint.sh` + `install_nmz_e-antic.sh`; a newer system FLINT (MSYS2
+  ships 3.5) is deliberately not used - its differing layout corrupts the archive.
+- Algebraic computation verified on the engine: the dodecahedron over Q(sqrt5)
+  yields lattice-normalized volume `-1056*a+2400`.
+- GUI links e-antic (ABI-critical: it compiles with ENFNORMALIZ to match the
+  archive's `renf_elem_class` layout). Dynamic e-antic on Windows (DLLs bundled by
+  win-deploy.sh); static on Linux/macOS (nothing extra to bundle).
+- CI builds the FLINT + e-antic chain per platform (MSYS2 / apt+scripts / brew+scripts).
+
+### Fixed
+- `install_nmz_e-antic.sh` (MSYS path): removed a stale `cp` of a patch file deleted
+  upstream; rename e-antic's `fmpz_poly_randtest_irreducible` to avoid a
+  multiple-definition link error against FLINT; add `--disable-dependency-tracking`
+  for MSYS2 automake; guard the empty "hide" restore.
+
+### Pending
+- GUI algebraic-input path: `number_field` input still needs the `Cone<renf_elem_class>`
+  route in the compute worker (the engine and link are ready).
+
 ## [0.2.0] - 2026-07-03
 
 First step beyond the NAKED engine: optional-library computations begin with nauty.

@@ -35,15 +35,25 @@ jobs:
             mingw-w64-x86_64-qt6-base
             mingw-w64-x86_64-nsis
             mingw-w64-x86_64-nauty
+            mingw-w64-x86_64-boost
 
-      - name: Build libnormaliz.a (nauty enabled)
+      - name: Build FLINT 3.0.1 + e-antic (algebraic)
+        run: |
+          # Pinned FLINT 3.0.1 + e-antic 2.0.2 into <repo>/local (OPT_LIB_ROOT).
+          # FLINT uses the MSYS2 mpfr; e-antic links FLINT statically. The scripts'
+          # msys branches (randtest rename, --disable-dependency-tracking) apply
+          # because the setup-msys2 shell reports OSTYPE=msys.
+          export NMZ_PREFIX="$PWD/local"
+          ./install_scripts_opt/install_nmz_flint.sh
+          ./install_scripts_opt/install_nmz_e-antic.sh
+
+      - name: Build libnormaliz.a (nauty + e-antic)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          # Non-NAKED with only nauty on (automorphism groups); cocoa/e-antic/flint/
-          # hash-library stay off. nauty from MSYS2 (/mingw64) is on the default path.
-          mingw32-make -f Makefile.classic COCOA=no EANTIC=no FLINT=no HASHLIBRARY=no -j$(nproc)
+          # nauty + e-antic (ENFNORMALIZ) + FLINT on; cocoa / hash-library stay off.
+          mingw32-make -f Makefile.classic COCOA=no HASHLIBRARY=no -j$(nproc)
 
       - name: Build GUI
         run: |
@@ -85,8 +95,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake ninja-build file wget imagemagick \
-            qt6-base-dev libgl1-mesa-dev \
-            libgmp-dev libgmpxx4ldbl libmpfr-dev libflint-dev
+            qt6-base-dev libgl1-mesa-dev libboost-dev \
+            libgmp-dev libgmpxx4ldbl libmpfr-dev
 
       - name: Build nauty (canonical, TLS)
         run: |
@@ -95,12 +105,20 @@ jobs:
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
-      - name: Build libnormaliz.a (nauty enabled)
+      - name: Build MPFR + FLINT 3.0.1 + e-antic (algebraic)
+        run: |
+          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 into <repo>/local.
+          # e-antic is linked statically into the GUI (visibility, not dllimport),
+          # so the AppImage needs no libeantic .so bundled.
+          export NMZ_PREFIX="$PWD/local"
+          ./install_scripts_opt/install_eantic_with_prerequisites.sh
+
+      - name: Build libnormaliz.a (nauty + e-antic)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          make -f Makefile.classic COCOA=no EANTIC=no FLINT=no HASHLIBRARY=no -j$(nproc)
+          make -f Makefile.classic COCOA=no HASHLIBRARY=no -j$(nproc)
 
       - name: Build GUI
         run: |
@@ -153,9 +171,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt gmp mpfr flint cmake ninja
+          brew install qt gmp mpfr flint boost cmake ninja
           # Homebrew (Apple Silicon: /opt/homebrew) is not on the default compiler
-          # search path; expose its headers/libs (gmp, mpfr, flint) to all steps.
+          # search path; expose its headers/libs (gmp, mpfr, flint, boost) to all steps.
           echo "CPATH=$(brew --prefix)/include" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
@@ -164,7 +182,14 @@ jobs:
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
-      - name: Build libnormaliz.a (static, nauty enabled)
+      - name: Build MPFR + FLINT 3.0.1 + e-antic (algebraic)
+        run: |
+          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 into <repo>/local;
+          # e-antic is linked statically into the GUI so the .dmg needs no dylib.
+          export NMZ_PREFIX="$PWD/local"
+          ./install_scripts_opt/install_eantic_with_prerequisites.sh
+
+      - name: Build libnormaliz.a (static, nauty + e-antic)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
@@ -172,8 +197,8 @@ jobs:
           # Build only the static archive (the 'lib' target). This avoids both the
           # -static executable link and the GNU-ld '-rpath=' flags of the shared
           # build, which Apple's ld rejects. OPENMP=no: Apple clang has no -fopenmp.
-          # Non-NAKED with only nauty on; cocoa/e-antic/flint/hash stay off.
-          make -f Makefile.classic COCOA=no EANTIC=no FLINT=no HASHLIBRARY=no OPENMP=no lib -j$(sysctl -n hw.ncpu)
+          # nauty + e-antic (ENFNORMALIZ) + FLINT on; cocoa / hash stay off.
+          make -f Makefile.classic COCOA=no HASHLIBRARY=no OPENMP=no lib -j$(sysctl -n hw.ncpu)
 
       - name: Build GUI
         run: |

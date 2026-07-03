@@ -28,6 +28,12 @@ E_ANTIC_SHA256=8328e6490129dfec7f4aa478ebd54dc07686bd5e5e7f5f30dcf20c0f11b67f60
 
 CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --prefix=${PREFIX} --disable-silent-rules --without-byexample --without-doc --without-benchmark --without-pyeantic"
 
+# MSYS2 automake cannot bootstrap the dependency-tracking makefile fragments;
+# disable it (harmless for a one-shot build).
+if [ "$OSTYPE" == "msys" ]; then
+	CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --disable-dependency-tracking"
+fi
+
 echo "Installing E-ANTIC..."
 
 mkdir -p ${NMZ_OPT_DIR}/E-ANTIC_source/
@@ -36,13 +42,17 @@ cd ${NMZ_OPT_DIR}/E-ANTIC_source
 ../../download.sh ${E_ANTIC_URL} ${E_ANTIC_SHA256}
 if [ ! -d e-antic-${E_ANTIC_VERSION} ]; then
     tar -xvf e-antic-${E_ANTIC_VERSION}.tar.gz
-	if [ "$OSTYPE" == "msys" ]; then
-		cp ../../install_scripts_opt/e-antic_patches/randtest_irreducible.c \
-		          e-antic-${E_ANTIC_VERSION}/libeantic/src/fmpz_poly_extra
-	fi
 	cd e-antic-${E_ANTIC_VERSION}/libeantic
 	sed -i -e s/fmpq_poly_add_fmpq/fmpq_poly_add_fmpq_eantic/g upstream/patched/fmpq_poly_add_fmpq.c
     cp ../../../../install_scripts_opt/e-antic_patches/nf_elem_add_fmpq.c upstream/patched/
+	# FLINT (>=3.0) also defines fmpz_poly_randtest_irreducible in libflint.a;
+	# rename e-antic's own copy to avoid a multiple-definition link error on
+	# Windows (mingw ld is strict). Reproduces the removed randtest patch.
+	if [ "$OSTYPE" == "msys" ]; then
+		for f in $(grep -rl fmpz_poly_randtest_irreducible .); do
+			sed -i s/fmpz_poly_randtest_irreducible/fmpz_poly_randtest_irreducible_eantic/g "$f"
+		done
+	fi
 	cd ../..
 fi
 
@@ -56,6 +66,10 @@ make -j4
 make install
 
 if [ "$OSTYPE" == "msys" ]; then
-	echo "Restoring libmpfr.la and libflint.a"
-	cp ${PREFIX}/lib/hide/* ${PREFIX}/lib
+	# The corresponding "hide" moves above are commented out, so hide/ is empty;
+	# only restore if something is actually there (avoids a set -e abort).
+	if ls ${PREFIX}/lib/hide/* >/dev/null 2>&1; then
+		echo "Restoring libmpfr.la and libflint.a"
+		cp ${PREFIX}/lib/hide/* ${PREFIX}/lib
+	fi
 fi

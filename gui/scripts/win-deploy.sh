@@ -5,8 +5,16 @@
 set -e
 exe="$1"
 dir="$(dirname "$exe")"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 windeployqt --no-translations --no-compiler-runtime "$exe" >/dev/null 2>&1 || true
+
+# e-antic runtime DLLs live in <repo>/local/bin, not /mingw64/bin, so the
+# ldd/grep recursion below would miss them. Copy them in first; copy_deps then
+# pulls their own /mingw64 dependencies (gmp, mpfr, libstdc++, ...).
+for d in "$script_dir/../../local/bin"/libeantic*.dll; do
+    [ -f "$d" ] && cp -f "$d" "$dir"/
+done
 
 cd "$dir"
 copy_deps() {
