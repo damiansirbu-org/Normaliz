@@ -1,8 +1,9 @@
-name: GUI release (Windows installer + Linux AppImage)
+name: GUI release (Windows installer + Linux AppImage + macOS dmg)
 
 # Builds libnormaliz + the Qt GUI (gui/) and packages a native installer per OS:
 #   Windows -> NSIS setup.exe   (bundles Qt/GMP DLLs via windeployqt)
 #   Linux   -> AppImage         (bundles Qt/GMP via linuxdeploy)
+#   macOS   -> .dmg             (frameworks bundled via macdeployqt)
 # Artifacts are uploaded; download them from the workflow run.
 
 on:
