@@ -32,6 +32,7 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-gmp
             mingw-w64-x86_64-mpfr
+            mingw-w64-x86_64-flint
             mingw-w64-x86_64-qt6-base
             mingw-w64-x86_64-nsis
             mingw-w64-x86_64-nauty
@@ -183,8 +184,11 @@ jobs:
           # Homebrew (Apple Silicon: /opt/homebrew) is not on the default compiler
           # search path; expose its headers/libs (gmp, mpfr, boost) to all steps.
           # FLINT is NOT brewed on purpose: the pinned FLINT 3.0.1 is built into
-          # <repo>/local; a system FLINT (3.5) on the global include path would
-          # shadow it and break e-antic 2.0.2 (relied only on -I order before).
+          # <repo>/local and e-antic links it statically here; a system FLINT (3.x)
+          # on the global CPATH would shadow the pinned headers. (On Windows the
+          # MSYS2 flint package is kept: e-antic there builds as a shared DLL and
+          # links against it - dropping it makes e-antic link static and the GUI's
+          # dllimport symbols go undefined.)
           echo "CPATH=$(brew --prefix)/include" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
