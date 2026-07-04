@@ -54,7 +54,7 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 
 | jNormaliz | Status | Notes |
 |---|---|---|
-| Output file options (.out/.gen/.inv/.typ/.cst, triangulation, Stanley) | [-] | in-process; no .out files. Structured results instead |
+| Output file options (.out/.gen/.inv/.typ/.cst, triangulation, Stanley) | [-] | in-process; results (incl. triangulation/Stanley side files) are rendered directly in the Output pane, no project files |
 | Ignore in-file options | [ ] | OptionsHandler flag |
 | Control parallel threads | [x] | Options tab spinbox (set_thread_limit) |
 | Font size | [x] | Options tab spinbox |
@@ -81,13 +81,13 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 ## Computation goals
 
 jNormaliz drives these through the mode box; we expose them as checkboxes.
+25 goals are offered as checkboxes (a convenience subset). Any of libnormaliz's
+~150 ConeProperties can also be requested by typing its name in the .in editor,
+exactly like the CLI; the full Normaliz output (all computed properties,
+including side files like the triangulation) is shown.
 
 | Goal | Status | Notes |
 |---|---|---|
-25 goals are offered as checkboxes (a convenience subset). Any of libnormaliz's
-~150 ConeProperties can also be requested by typing its name in the .in editor,
-exactly like the CLI; the full Normaliz output (all computed properties) is shown.
-
 | Hilbert basis, extreme rays, support hyperplanes | [x] | matrices |
 | Module generators, degree-1 elements, maximal subspace | [x] | matrices |
 | Hilbert series, Ehrhart series | [x] | series |
@@ -103,7 +103,7 @@ exactly like the CLI; the full Normaliz output (all computed properties) is show
 
 | Item | Status | Notes |
 |---|---|---|
-| In-process engine (no .in/.out round-trip) | [x] | Cone in process, no temp files |
+| In-process engine (no .in/.out round-trip) | [x] | Cone in process; rendering uses a private per-run temp dir, removed automatically |
 | Cross-platform native installers | [x] | CI: setup.exe / AppImage / dmg |
 | Backend selector Local / Cloud | [~] | Local done; Cloud (distributed) is WIP |
 | Structured, typed result views (tables) | [ ] | QTableView for matrices |
@@ -117,10 +117,12 @@ exactly like the CLI; the full Normaliz output (all computed properties) is show
 Parity: essentially complete. Done - the full File menu (New/Open/Close/Save/Save
 As/Print/Exit), Edit menu, Run/Stop, the toolbar (algorithm/mode/precision), the
 Help menu (help/website/manual/math background/About), the Output/Console/Options
-tabs (thread control, font size), eight computation goals, and the status line
-(elapsed time, memory gauge). Not applicable to this build: Ignore-in-file and
-NmzIntegrate options (NmzIntegrate needs CoCoALib; output-file options are moot
-for the in-process engine). Refinements left: live-streaming Console (the log is
-shown on completion) and further computation goals. Beyond jNormaliz: in-process
-engine, installers and the Local backend are done; visualization, observability,
-autotuning and provenance are the research pillars.
+tabs (thread control, font size), 25 checkbox goals plus every ConeProperty by
+name in the editor, the NmzIntegrate goals in-process (CoCoALib), algebraic
+polyhedra (e-antic), automorphism groups (nauty), and the status line (elapsed
+time, memory gauge). Not applicable by design: output-file options (results are
+rendered in the app, from a private temp dir cleaned per run). Refinements left:
+Ignore-in-file options and the live-streaming Console (the log is shown on
+completion). Beyond jNormaliz: in-process engine, installers and the Local
+backend are done; visualization, observability, autotuning and provenance are
+the research pillars.

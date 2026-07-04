@@ -34,18 +34,31 @@ and the message is printed in Output (the app does not crash).
 ## Build from source
 
 MSYS2 / MINGW64, packages:
-`mingw-w64-x86_64-{toolchain,cmake,ninja,qt6-base,gmp,mpfr,flint}`.
+`mingw-w64-x86_64-{toolchain,cmake,ninja,qt6-base,gmp,mpfr,nauty,boost}` plus
+`make` and `diffutils`.
 
-    # engine (once), from repo root
+The GUI compiles with `ENFNORMALIZ`, so `libnormaliz.a` MUST be the full build
+(nauty + e-antic + CoCoALib) - a NAKED archive has a different `Cone` layout
+and does not link.
+
+    # 1. optional libraries into <repo>/local (once), from repo root
+    export OSTYPE=msys NMZ_PREFIX="$PWD/local"
+    ./install_scripts_opt/install_nmz_flint.sh      # pinned FLINT 3.0.1
+    ./install_scripts_opt/install_nmz_e-antic.sh    # e-antic 2.0.2
+    ./install_scripts_opt/install_nmz_cocoa.sh      # CoCoALib
+
+    # 2. engine (once)
     cd source
     cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
     cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-    mingw32-make -f Makefile.classic NAKED=yes -j$(nproc)
+    mingw32-make -f Makefile.classic HASHLIBRARY=no lib -j$(nproc)
 
-    # gui
+    # 3. gui
     cd ../gui
     cmake -G Ninja -B build -DCMAKE_PREFIX_PATH=/mingw64
     cmake --build build
     ./build/normaliz-gui.exe
 
-`TMP`/`TEMP` must point to a writable directory (g++ writes temporaries there).
+Running from the build tree needs the e-antic DLLs on PATH (`<repo>/local/bin`);
+the post-build deploy step copies them next to the exe, so a double-click on
+`build/normaliz-gui.exe` works too.

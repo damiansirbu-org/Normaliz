@@ -3,6 +3,51 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.6.0] - 2026-07-04
+
+Fixes from the full adversarial review (phd docs: Normaliz-GUI/review-report.md).
+
+### Fixed
+- CLI-parity for additional input: `add_inequalities` / `add_equations` /
+  `add_cone` / `add_subspace` / `add_vertices` / inhomogeneous variants were
+  silently ignored (the result differed from the CLI on the same `.in`); they
+  are now stripped before the Cone is built and applied via `modifyCone` +
+  recompute, exactly as `normaliz.cpp` does.
+- Rendering now uses a unique per-run `QTemporaryDir` (system temp on all three
+  platforms) instead of `TEMP`/`TMP` with a fixed file name: no more collisions
+  between GUI instances, no orphaned files, and a working temp path on
+  Linux/macOS where `TEMP` is typically unset.
+- Side files written by Normaliz's `Output` (.tri/.tgn triangulation, .aut
+  automorphisms, .fac face lattice, fusion files, ...) are appended to the
+  Output pane instead of being stranded invisibly on disk.
+- A Stop arriving after the computation finished no longer discards the results
+  (the interrupt flag is cleared before rendering, as the CLI does before
+  `write_files`); a Stop during input parsing is honored instead of being
+  silently cleared by `Cone::compute`.
+- `NotComputableException` now renders the available results with a note (CLI
+  behavior: "Writing only available data") instead of showing only the error.
+- The algebraic-goal filter asks the engine's own `check_Q_permissible` per
+  property instead of a hand-kept whitelist that wrongly skipped
+  `LatticePoints`, `Triangulation`, `Automorphisms`, `ModuleGenerators`,
+  `EuclideanVolume`, ... on `number_field` input.
+- Polynomial / numerical parameters are set on the algebraic path too (the CLI
+  sets them for both cone types).
+- The thread limit is restored to the engine default when the spinbox returns
+  to 0 (set_thread_limit is sticky in the engine).
+- Engine "ERROR: ..." lines (errorOutput/cerr) are captured into the Console
+  tab; they were lost in a windowed app.
+- Closing the window during a computation now asks, stops the engine and waits
+  for the worker instead of tearing the process down under it.
+- Print prints the visible Output/Console tab when it has content (jNormaliz
+  printed the selected tab), not always the input.
+- Stale UI text removed (the build HAS CoCoALib); the Help dialog documents
+  typing any ConeProperty name in the editor.
+- Build-instruction fixes: `NAKED=yes` removed from CMake messages and
+  usage.md (it produces an ABI-mismatched archive); C++17 declared (Qt 6
+  requirement); GUI compiles with the same optional-library defines as the
+  archive (ODR); NSIS installer version aligned; windeployqt failures no
+  longer swallowed by the deploy script; New-dialog sizes capped.
+
 ## [0.5.0] - 2026-07-04
 
 Full engine access: request any goal by name, see the complete Normaliz output.

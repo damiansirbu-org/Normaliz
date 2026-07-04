@@ -60,6 +60,7 @@ Parity targets are drawn from the jNormaliz 1.7 feature inventory.
 
 ## Beyond jNormaliz
 
-- In-process engine (no CLI/file round-trip): faster, no temporary files.
+- In-process engine (no CLI/file round-trip): faster, no project files on disk
+  (rendering uses a private per-run temp dir, removed automatically).
 - Structured, typed result views instead of raw `.out` text.
 - Single self-contained installer per OS.

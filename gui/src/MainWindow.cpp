@@ -36,15 +36,25 @@
 #include <QFont>
 #include <QPrinter>
 #include <QPrintDialog>
+#include <QTemporaryDir>
+#include <QDir>
+#include <QFileInfoList>
 #include <QtConcurrent>
 
 #include <sstream>
+#include <fstream>
+#include <cstdio>
 #include <vector>
 #include <map>
 #include <iostream>
+#include <algorithm>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "libnormaliz/cone.h"
 #include "libnormaliz/input.h"
+#include "libnormaliz/input_type.h"
 #include "libnormaliz/output.h"
 #include "libnormaliz/HilbertSeries.h"
 #include "libnormaliz/normaliz_exception.h"
@@ -70,15 +80,19 @@ namespace {
 
 // RAII: send libnormaliz verbose output to a buffer for the Console tab, and
 // restore the previous state (even on exception) so no dangling stream remains.
+// The error stream is captured too: the engine prints "ERROR: ..." details to
+// errorOutput() before throwing, and this app has no console to show cerr.
 struct VerboseCapture {
     bool old_;
     explicit VerboseCapture(std::ostream& s) {
         old_ = setVerboseDefault(true);
         setVerboseOutput(s);
+        setErrorOutput(s);
     }
     ~VerboseCapture() {
         setVerboseDefault(old_);
         setVerboseOutput(std::cout);
+        setErrorOutput(std::cerr);
     }
 };
 
@@ -139,50 +153,119 @@ const std::vector<GoalDef>& goalTable() {
     return t;
 }
 
-// Algebraic (real embedded number field) input runs on Cone<renf_elem_class>.
-// Only the geometric goals apply; the lattice / series goals (Hilbert basis and
-// series, Ehrhart, multiplicity, class group, degree-1, Gorenstein, ...) do not.
+// Algebraic (real embedded number field) input runs on Cone<renf_elem_class>,
+// where only part of the goals make sense. Ask the engine's own check
+// (ConeProperties::check_Q_permissible, the one Cone::compute enforces) per
+// property instead of keeping a hand-written whitelist - the hand-kept list
+// used to drop goals the engine does support on renf (LatticePoints,
+// Triangulation, Automorphisms, ModuleGenerators, EuclideanVolume, ...).
 bool renfApplicable(ConeProperty::Enum p) {
-    switch (p) {
-        case ConeProperty::ExtremeRays:
-        case ConeProperty::SupportHyperplanes:
-        case ConeProperty::MaximalSubspace:
-        case ConeProperty::Volume:
-        case ConeProperty::NumberLatticePoints:
-        case ConeProperty::TriangulationSize:
-        case ConeProperty::Dehomogenization:
-        case ConeProperty::Rank:
-        case ConeProperty::EmbeddingDim:
-        case ConeProperty::RecessionRank:
-        case ConeProperty::IsPointed:
-            return true;
-        default:
-            return false;
+    ConeProperties one;
+    one.set(p);
+    std::ostringstream mute;   // the check prints the offender before throwing
+    setErrorOutput(mute);
+    bool ok = true;
+    try {
+        one.check_Q_permissible(true);
+    } catch (const BadInputException&) {
+        ok = false;
+    }
+    setErrorOutput(std::cerr);
+    return ok;
+}
+
+// Extra input (add_inequalities / add_cone / ...) is stripped before the Cone
+// is built and applied after the main computation via modifyCone, exactly as
+// the CLI does (extract_additional_input in normaliz.cpp). Left in place, the
+// Cone constructor silently ignores it and the result differs from the CLI.
+template <class Number>
+InputMap<Number> extractAdditionalInput(InputMap<Number>& input) {
+    static const std::pair<Type::InputType, Type::InputType> moves[] = {
+        {Type::add_inequalities, Type::inequalities},
+        {Type::add_equations, Type::equations},
+        {Type::add_inhom_inequalities, Type::inhom_inequalities},
+        {Type::add_inhom_equations, Type::inhom_equations},
+        {Type::add_cone, Type::cone},
+        {Type::add_subspace, Type::subspace},
+        {Type::add_vertices, Type::vertices},
+    };
+    InputMap<Number> add;
+    for (const auto& m : moves) {
+        auto it = input.find(m.first);
+        if (it != input.end()) {
+            add[m.second] = it->second;
+            input.erase(it);
+        }
+    }
+    return add;
+}
+
+// Thread limit for a run; 0 = auto. set_thread_limit is sticky in the engine
+// (parallelization_set stays true), so going back to auto must restore the
+// engine's own default cap explicitly - otherwise the last explicit value
+// silently persists for the rest of the session.
+void applyThreadLimit(int threads) {
+    // Captured on the first run, before anything called omp_set_num_threads.
+    static const int autoLimit =
+#ifdef _OPENMP
+        std::min(omp_get_max_threads(), default_thread_limit);
+#else
+        default_thread_limit;
+#endif
+    static bool everSet = false;
+    if (threads > 0) {
+        set_thread_limit(threads);
+        everSet = true;
+    }
+    else if (everSet) {
+        set_thread_limit(autoLimit);
+        everSet = false;
     }
 }
 
 // Render the complete Normaliz result the same way the CLI writes the .out file,
-// so every computed property shows (not just the goals with a formatGoal case).
-// Output only writes to a file, so use a temp path and read it back; the user
-// never sees a file (input still comes from the editor).
+// so every computed property shows. The Output class only writes to files, so
+// render into a fresh QTemporaryDir (system temp via QDir::tempPath -> TMPDIR /
+// GetTempPath, valid on all three platforms) and read everything back:
+//  - a unique directory per run: two GUI instances cannot collide;
+//  - write_files also emits side files for some properties (.tri/.tgn for
+//    Triangulation, .aut for Automorphisms, .fac, .dec, fusion files, ...);
+//    they are appended to the text so the data is actually visible, and the
+//    directory (RAII) removes every file even if write_files throws.
 template <class Integer>
 std::string renderFullOutput(Cone<Integer>& cone, renf_class_shared nf) {
-    const char* td = std::getenv("TEMP");
-    if (!td) td = std::getenv("TMP");
-    std::string base = std::string(td ? td : ".") + "/normaliz-gui-render";
-    std::string outfile = base + ".out";
+    QTemporaryDir tmp;
+    if (!tmp.isValid())
+        return "Error: cannot create a temporary directory for rendering the result.";
+    const QString base = tmp.path() + "/result";
     Output<Integer> Out;
-    Out.set_name(base);
+    Out.set_name(std::string(base.toLocal8Bit().constData()));
     Out.set_write_out(true);
     Out.set_renf(nf);            // no-op when nf is null (rational input)
     Out.setCone(cone);
     Out.write_files();
-    std::ifstream f(outfile.c_str());
-    std::stringstream ss;
-    ss << f.rdbuf();
-    f.close();
-    std::remove(outfile.c_str());
-    return ss.str();
+
+    std::string text;
+    QFile outFile(base + ".out");
+    if (outFile.open(QIODevice::ReadOnly))
+        text = outFile.readAll().toStdString();
+
+    // Side files (everything except result.out), e.g. the triangulation itself.
+    const QFileInfoList side = QDir(tmp.path()).entryInfoList(QDir::Files, QDir::Name);
+    for (const QFileInfo& fi : side) {
+        if (fi.fileName() == "result.out")
+            continue;
+        QFile f(fi.absoluteFilePath());
+        if (!f.open(QIODevice::ReadOnly))
+            continue;
+        text += "\n==================== additional output (";
+        text += fi.fileName().toStdString();
+        text += ") ====================\n";
+        text += f.readAll().toStdString();
+    }
+    if (text.empty())
+        text = "Error: the computation produced no output.";
+    return text;
 }
 
 }  // namespace
@@ -251,13 +334,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     root->addLayout(top, 3);
 
     // Tabbed panel: Output / Console / Options.
-    auto* tabs = new QTabWidget();
+    tabs_ = new QTabWidget();
     output_ = new QPlainTextEdit();
     output_->setReadOnly(true);
     console_ = new QPlainTextEdit();
     console_->setReadOnly(true);
-    tabs->addTab(output_, "Output");
-    tabs->addTab(console_, "Console");
+    tabs_->addTab(output_, "Output");
+    tabs_->addTab(console_, "Console");
 
     auto* optWidget = new QWidget();
     auto* optForm = new QFormLayout(optWidget);
@@ -271,13 +354,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     fontSpin_->setValue(10);
     optForm->addRow("Font size:", fontSpin_);
     auto* optNote = new QLabel(
-        "Output-file options and NmzIntegrate are not applicable here: the engine "
-        "runs in process (no .out files) and this build has no CoCoALib.");
+        "The engine runs fully in process (libnormaliz with nauty, e-antic and "
+        "CoCoALib). Besides the checkboxes, any ConeProperty can be requested by "
+        "typing its name in the input editor; the complete Normaliz output is shown.");
     optNote->setWordWrap(true);
     optForm->addRow(optNote);
-    tabs->addTab(optWidget, "Options");
+    tabs_->addTab(optWidget, "Options");
 
-    root->addWidget(tabs, 2);
+    root->addWidget(tabs_, 2);
 
     setCentralWidget(central);
     buildMenu();
@@ -375,6 +459,10 @@ void MainWindow::buildMenu() {
             "1. Enter a Normaliz input in the Input (.in) editor (or File &gt; Open).<br>"
             "2. Tick the computation goals.<br>"
             "3. Press Compute; use Stop to cancel.<br><br>"
+            "Any of libnormaliz's ~150 computation goals (ConeProperty) can also be "
+            "requested by typing its name on a line in the input editor, exactly as "
+            "on the normaliz command line - the checkboxes are just a convenience "
+            "subset.<br><br>"
             "The toolbar sets algorithm, mode and precision. The Console tab shows "
             "the engine log; the Options tab sets threads and font size.<br><br>"
             "Full documentation is in the gui/doc folder.");
@@ -428,6 +516,19 @@ bool MainWindow::maybeSave() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
+    // Do not tear the process down under a running worker: stop the engine and
+    // wait for it (jNormaliz offered the same interrupt-on-exit).
+    if (watcher_.isRunning()) {
+        QMessageBox::StandardButton ret = QMessageBox::question(
+            this, "Normaliz", "A computation is running.\nStop it and exit?",
+            QMessageBox::Yes | QMessageBox::No);
+        if (ret != QMessageBox::Yes) {
+            event->ignore();
+            return;
+        }
+        nmz_interrupted = 1;
+        watcher_.waitForFinished();
+    }
     if (maybeSave())
         event->accept();
     else
@@ -438,12 +539,14 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 // mirroring jNormaliz's "New input" dialog.
 void MainWindow::newFile() {
     if (!maybeSave()) return;
+    // Caps keep the generated template at a size the editor can handle; a
+    // hand-edited skeleton beyond 500 x 5000 is not a realistic workflow.
     bool ok = false;
     int cols = QInputDialog::getInt(this, "New input", "Ambient dimension (columns):",
-                                    2, 1, 100000, 1, &ok);
+                                    2, 1, 500, 1, &ok);
     if (!ok) return;
     int rows = QInputDialog::getInt(this, "New input", "Number of generators (rows):",
-                                    2, 1, 1000000, 1, &ok);
+                                    2, 1, 5000, 1, &ok);
     if (!ok) return;
     QString t = QString("amb_space %1\ncone %2\n").arg(cols).arg(rows);
     for (int i = 0; i < rows; ++i) {
@@ -508,10 +611,17 @@ void MainWindow::closeFile() {
 }
 
 void MainWindow::printCurrent() {
+    // jNormaliz printed the selected tab; print the visible Output/Console tab
+    // when it has content, otherwise the input editor.
+    QPlainTextEdit* target = input_;
+    if (tabs_->currentWidget() == output_ && !output_->toPlainText().isEmpty())
+        target = output_;
+    else if (tabs_->currentWidget() == console_ && !console_->toPlainText().isEmpty())
+        target = console_;
     QPrinter printer;
     QPrintDialog dlg(&printer, this);
     if (dlg.exec() != QDialog::Accepted) return;
-    input_->print(&printer);   // print the .in input
+    target->print(&printer);
 }
 
 // Worker thread. All exceptions are caught here; none may escape into Qt.
@@ -545,7 +655,15 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
             algebraic = true;
         }
 
+        // A Stop pressed during parsing must hold: Cone::compute clears
+        // nmz_interrupted on entry, so it has to be honored here.
+        if (nmz_interrupted)
+            throw InterruptException("stopped before the computation started");
+
+        applyThreadLimit(g.threads);
+
         std::ostringstream oss;
+        std::string notComputable;
 
         // Everything the user asked for: the ticked goals plus any goal names
         // typed directly in the .in editor (options.getToCompute()) - the same
@@ -557,9 +675,14 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
         requested.set(options.getToCompute());
 
         if (algebraic) {
+            InputMap<renf_elem_class> add_input = extractAdditionalInput(renf_input);
             Cone<renf_elem_class> cone(renf_input);
             cone.setRenf(number_field);
-            // Only the geometric goals apply to a real embedded number field.
+            // Polynomial / numerical parameters apply on the algebraic path too
+            // (the CLI sets them for both cone types in compute_and_output).
+            cone.setPolyParams(poly_param_input);
+            cone.setNumericalParams(num_param_input);
+            // Only the engine-permitted (geometric) goals apply on renf.
             ConeProperties props;
             int skipped = 0;
             for (size_t i = 0; i < ConeProperty::EnumSize; ++i) {
@@ -571,16 +694,35 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
             if (g.algo == 1)      props.set(ConeProperty::PrimalMode);
             else if (g.algo == 2) props.set(ConeProperty::DualMode);
             if (g.mode == 1) props.set(ConeProperty::DefaultMode);
-            if (g.threads > 0) set_thread_limit(g.threads);
             {
                 VerboseCapture vc(vlog);
-                cone.compute(props);
+                try {
+                    cone.compute(props);
+                    if (!add_input.empty()) {   // apply add_* input as the CLI does
+                        cone.modifyCone(add_input);
+                        ConeProperties after;
+                        after.set(ConeProperty::SupportHyperplanes);
+                        cone.compute(after);
+                    }
+                } catch (const NotComputableException& e) {
+                    notComputable = e.what();   // still render what was computed
+                }
             }
+            // A Stop arriving after compute finished must not poison the
+            // rendering (Output may run extra computations); the CLI resets
+            // the flag before write_files for the same reason.
+            nmz_interrupted = 0;
+            if (!notComputable.empty())
+                oss << "Not all requested goals could be computed:\n" << notComputable
+                    << "\nShowing the available results.\n\n";
             oss << renderFullOutput(cone, number_field);
             if (skipped > 0)
                 oss << "\n(" << skipped << " requested goal(s) not applicable to "
                        "algebraic input were skipped.)\n";
+            if (g.prec == 1)
+                oss << "\n(BigInt is not applicable to algebraic input; ignored.)\n";
         } else {
+            InputMap<mpq_class> add_input = extractAdditionalInput(input);
             Cone<mpz_class> cone(input);
             // An integrand polynomial / numerical parameters, if the input declared
             // them (needed for Integral, weighted Ehrhart via CoCoALib).
@@ -592,12 +734,28 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
             else if (g.algo == 2) props.set(ConeProperty::DualMode);
             if (g.mode == 1) props.set(ConeProperty::DefaultMode);
             if (g.prec == 1) props.set(ConeProperty::BigInt);
-            if (g.threads > 0) set_thread_limit(g.threads);
             {
                 VerboseCapture vc(vlog);   // capture verbose output for the Console tab
-                cone.compute(props);
+                try {
+                    cone.compute(props);
+                    if (!add_input.empty()) {   // apply add_* input as the CLI does
+                        cone.modifyCone(add_input);
+                        ConeProperties after;
+                        after.set(ConeProperty::SupportHyperplanes);
+                        cone.compute(after);
+                    }
+                } catch (const NotComputableException& e) {
+                    notComputable = e.what();   // still render what was computed
+                }
             }
+            nmz_interrupted = 0;   // see the comment on the algebraic branch
+            if (!notComputable.empty())
+                oss << "Not all requested goals could be computed:\n" << notComputable
+                    << "\nShowing the available results.\n\n";
             oss << renderFullOutput(cone, nullptr);
+            if (options.isUseLongLong())
+                oss << "\n(LongLong from the input is ignored: the GUI always "
+                       "computes with arbitrary precision.)\n";
         }
 
         r.ok = true;

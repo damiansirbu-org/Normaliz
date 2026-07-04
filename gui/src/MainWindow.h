@@ -16,6 +16,7 @@ class QLabel;
 class QTimer;
 class QComboBox;
 class QSpinBox;
+class QTabWidget;
 
 // Layout: input (.in) editor + a scrollable computation-goal selector on top; a
 // tabbed panel (Output / Console / Options) below; File/Edit/Help menus and a
@@ -55,6 +56,7 @@ private:
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;
     QPlainTextEdit* console_;
+    QTabWidget* tabs_;
     QPushButton* compute_;
     QPushButton* stop_;
     std::vector<QCheckBox*> cbGoals_;   // parallel to the goal table

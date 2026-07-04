@@ -7,7 +7,10 @@ exe="$1"
 dir="$(dirname "$exe")"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-windeployqt --no-translations --no-compiler-runtime "$exe" >/dev/null 2>&1 || true
+# A missing/failing windeployqt must fail the deploy loudly, not produce a
+# bundle without Qt (stdout is muted - windeployqt is chatty - stderr is not).
+command -v windeployqt >/dev/null 2>&1 || { echo "win-deploy: windeployqt not found on PATH" >&2; exit 1; }
+windeployqt --no-translations --no-compiler-runtime "$exe" >/dev/null
 
 # e-antic runtime DLLs live in <repo>/local/bin, not /mingw64/bin, so the
 # ldd/grep recursion below would miss them. Copy them in first; copy_deps then

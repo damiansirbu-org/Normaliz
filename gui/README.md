@@ -3,11 +3,12 @@
 Native desktop GUI for Normaliz, built as the `gui/` component of the Normaliz
 tree. Links `libnormaliz` statically and calls the compute engine in process.
 
-Status: early. A File menu (New/Open/Save) plus an `.in` editor parsed by
-Normaliz's own parser; computes Hilbert basis, extreme rays, support
-hyperplanes, Hilbert series and multiplicity on any input. Cross-platform
-installers (Windows/Linux/macOS) are produced by CI
-(`.github/workflows/gui-release.yml`).
+Status: full jNormaliz parity and beyond. Complete File/Edit/Help menus, an
+`.in` editor parsed by Normaliz's own parser, 25 checkbox goals plus any
+ConeProperty by name in the editor, the complete engine (nauty automorphisms,
+e-antic algebraic polyhedra, CoCoALib integrals), full `.out`-style output
+rendering, Run/Stop off-thread, and cross-platform installers
+(Windows/Linux/macOS) produced by CI (`.github/workflows/gui-release.yml`).
 
 ## Documentation
 

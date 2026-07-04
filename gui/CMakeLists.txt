@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(normaliz-gui CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)   # Qt 6 requires C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -12,15 +12,21 @@ find_package(OpenMP)
 
 # This GUI lives inside the Normaliz tree (Normaliz/gui). The engine headers and
 # the static libnormaliz.a are the sibling source/ directory.
-# Build the library first: cd ../source && mingw32-make -f Makefile.classic NAKED=yes
+# Build the FULL library first (nauty + e-antic + CoCoA; the ENFNORMALIZ define
+# below must match the archive): see gui/doc/usage.md. In short:
+#   ./install_scripts_opt/install_nmz_flint.sh && install_nmz_e-antic.sh && install_nmz_cocoa.sh
+#   cd source && make -f Makefile.classic HASHLIBRARY=no lib
 set(NORMALIZ_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../source" CACHE PATH "Normaliz source dir")
 
-# libnormaliz.a on Windows/Linux, libnormaliz.so/.dylib on macOS (no static link there).
+# The static libnormaliz.a on all three platforms (the CI builds the 'lib' target).
 find_library(NORMALIZ_LIB NAMES normaliz PATHS "${NORMALIZ_SRC}/libnormaliz" NO_DEFAULT_PATH)
 if(NOT NORMALIZ_LIB)
     message(FATAL_ERROR
         "libnormaliz not found in ${NORMALIZ_SRC}/libnormaliz.\n"
-        "Build it first (in ../source): make -f Makefile.classic NAKED=yes")
+        "Build the full library first (in ../source): "
+        "make -f Makefile.classic HASHLIBRARY=no lib (needs the optional-library "
+        "chain in <repo>/local; see gui/doc/usage.md). Do NOT build NAKED=yes: "
+        "the GUI compiles with ENFNORMALIZ and the ABI would not match.")
 endif()
 
 # WIN32 builds a GUI-subsystem app on Windows (no console window; Qt provides the
@@ -30,11 +36,17 @@ add_executable(normaliz-gui WIN32 MACOSX_BUNDLE
     src/MainWindow.cpp
 )
 
-# Match the optional-library defines libnormaliz.a was built with. ENFNORMALIZ is
-# ABI-critical: with it, general.h maps renf_elem_class to eantic's class; without,
-# to `long`. Cone<Integer> has a renf_elem_class member, so the GUI MUST compile
-# with the same define as the archive or the object layout mismatches.
-target_compile_definitions(normaliz-gui PRIVATE NMZ_MAKEFILE_CLASSIC ENFNORMALIZ NMZ_FLINT)
+# Match ALL the optional-library defines libnormaliz.a was built with.
+# ENFNORMALIZ is ABI-critical: with it, general.h maps renf_elem_class to
+# eantic's class; without, to `long`. Cone<Integer> has a renf_elem_class
+# member, so the GUI MUST compile with the same define as the archive or the
+# object layout mismatches. NMZ_COCOA / NMZ_NAUTY* have no layout impact (they
+# only guard non-virtual member declarations and the version banner), but they
+# are matched too so every header sees one definition (ODR). NMZ_COCOA needs
+# the CoCoA headers, present in <repo>/local/include.
+target_compile_definitions(normaliz-gui PRIVATE
+    NMZ_MAKEFILE_CLASSIC ENFNORMALIZ NMZ_FLINT
+    NMZ_COCOA NMZ_NAUTY NMZ_NAUTYNAUTY NMZ_NAUTY_TLS)
 
 # <repo>/local/include first: it holds e-antic's headers and the pinned FLINT 3.0.1
 # headers, which must win over any newer system FLINT.

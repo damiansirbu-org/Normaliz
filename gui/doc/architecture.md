@@ -8,7 +8,7 @@ round-trip.
 ## Components
 
     gui/
-      CMakeLists.txt              build; links libnormaliz.a + Qt6 Widgets/Concurrent + gmp (+ OpenMP)
+      CMakeLists.txt              build; links libnormaliz.a + nauty + e-antic + CoCoA + FLINT + Qt6 + gmp (+ OpenMP)
       src/main.cpp                QApplication, global stylesheet (QSS), entry point
       src/MainWindow.{h,cpp}      the single window and the compute worker
       scripts/win-deploy.sh       bundles Qt + transitive MinGW DLLs next to the exe
@@ -20,18 +20,23 @@ round-trip.
 The engine is called in process, not via the CLI:
 
     .in text  ->  readNormalizInput<mpq_class>  ->  InputMap
-              ->  Cone<mpz_class>(input)
-              ->  ConeProperties (HilbertBasis / ExtremeRays / SupportHyperplanes)
-              ->  cone.compute(props)
-              ->  getHilbertBasis() / getExtremeRays() / getSupportHyperplanes()
-              ->  text in the output pane
+              |   (NumberFieldInputException -> re-parse as renf_elem_class)
+              ->  Cone<mpz_class> or Cone<renf_elem_class>
+              ->  ConeProperties (checkboxes + goals typed in the editor)
+              ->  cone.compute(props)   [+ modifyCone for add_* input, as the CLI]
+              ->  Output::write_files into a per-run QTemporaryDir
+              ->  .out text (+ side files: .tri, .aut, ...) in the output pane
 
 The editor text is parsed by Normaliz's own parser `readNormalizInput`
 (`source/input.cpp`), the same one the CLI uses, so every input type is
 supported (cone, vertices, inequalities, equations, congruences, grading, ...).
-Arithmetic is GMP (`mpz_class`): arbitrary precision, no overflow. The public
-API is `Cone<Integer>` in `source/libnormaliz/cone.h`; computation goals are the
-`ConeProperty` enum in `source/libnormaliz/cone_property.h`.
+Rational input computes on GMP (`mpz_class`): arbitrary precision, no overflow.
+A `number_field` input dispatches to `Cone<renf_elem_class>` (e-antic), exactly
+as `normaliz.cpp` does. The public API is `Cone<Integer>` in
+`source/libnormaliz/cone.h`; computation goals are the `ConeProperty` enum in
+`source/libnormaliz/cone_property.h`. Results are rendered with Normaliz's own
+`Output` class into a temporary directory that is unique per run and removed
+afterwards; the `.out` text plus any side files are shown in the output pane.
 
 ## Threading
 
@@ -61,8 +66,9 @@ one job per OS:
     Linux     AppImage         (Qt + libs bundled via linuxdeploy)
     macOS     .dmg             (frameworks bundled via macdeployqt)
 
-Each job builds `libnormaliz.a` (static, NAKED), builds the GUI, packages the
-native installer, and uploads it as a run artifact.
+Each job builds the optional-library chain (nauty, pinned FLINT 3.0.1 +
+e-antic 2.0.2, CoCoALib) into `<repo>/local`, builds the full `libnormaliz.a`,
+builds the GUI, packages the native installer, and uploads it as a run artifact.
 
 ## Shared core (desktop and web)
 
@@ -80,25 +86,20 @@ optionally, a hybrid client that offloads large jobs to a remote backend.
 
 ## Engine coverage
 
-The GUI exposes 21 computation goals through a goal table in `MainWindow.cpp`
-(a `ConeProperty` plus a `formatGoal` case per goal). Adding a goal is a
-two-line change. This covers the common integer/rational-cone properties.
+The GUI exposes 25 computation goals as checkboxes through a goal table in
+`MainWindow.cpp` (adding one is a one-line change). Beyond the checkboxes, any
+of libnormaliz's ~150 `ConeProperty` goals can be requested by typing its name
+in the `.in` editor, exactly like the CLI; the full Normaliz output (all
+computed properties, including side files such as the triangulation) is shown.
 
-Two parts of the Normaliz engine are not yet reachable and need the full,
-non-NAKED `libnormaliz`: algebraic polyhedra (e-antic), integrals and weighted
-Ehrhart / NmzIntegrate (CoCoALib), and automorphism groups (nauty). Building
-those optional libraries into `libnormaliz.a` and the CI is the remaining step
-to cover the whole engine.
+`libnormaliz` is built complete (non-NAKED): algebraic polyhedra (e-antic),
+integrals / weighted Ehrhart (CoCoALib) and automorphism groups (nauty) are
+all available. On algebraic (`number_field`) input, the goals the engine does
+not support on renf are skipped with a note (the applicability test is the
+engine's own `check_Q_permissible`).
 
 ## Current limitations
 
-- `libnormaliz` is built NAKED (GMP only): no algebraic polyhedra (e-antic),
-  integrals (CoCoALib), or automorphism groups (nauty).
-- Goals cover a useful subset (Hilbert basis, extreme rays, support hyperplanes,
-  Hilbert series, multiplicity); more `ConeProperty` targets remain.
-- No run controls (algorithm/mode/precision), console/log, or cancel yet
-  (further jNormaliz parity is the next milestone).
-- `libnormaliz` is built with assertions on (NAKED, no `-DNDEBUG`): a malformed
-  internal state can `abort()` the app instead of throwing; a parity/release
-  build should define `NDEBUG`.
+- Results are text (the `.out` rendering), not structured tables.
+- The Console tab fills when the run ends (no live streaming yet).
 - Large results are rendered as a single text block (no paging/streaming yet).
