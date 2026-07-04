@@ -1,6 +1,8 @@
 #include <QApplication>
 #include <QTimer>
 #include <string>
+#include <fstream>
+#include <sstream>
 #include "MainWindow.h"
 
 // Neutral, high-contrast light theme: light-gray canvas, white cards with a
@@ -208,9 +210,40 @@ int main(int argc, char** argv) {
     QApplication app(argc, argv);
     app.setStyleSheet(kStyle);
 
+    // Hidden: `--run <in> <out>` computes the .in file headlessly (same worker
+    // path as the Compute button) and writes the rendered Output text, then
+    // exits. Used for automated GUI-vs-CLI parity testing.
+    // `--run` uses "Goals only" (goals come from the .in); `--rundefault` uses
+    // DefaultMode (matches a plain `normaliz file.in`).
+    for (int i = 1; i + 2 < argc; ++i) {
+        std::string flag(argv[i]);
+        if (flag == "--run" || flag == "--rundefault") {
+            std::ifstream inFile(argv[i + 1]);
+            std::stringstream ss;
+            ss << inFile.rdbuf();
+            std::string result = MainWindow::runHeadless(ss.str(), flag == "--rundefault");
+            std::ofstream outFile(argv[i + 2]);
+            outFile << result;
+            return 0;
+        }
+    }
+
     MainWindow w;
     w.resize(900, 800);
     w.show();
+
+    // Hidden: `--demo <in> <png>` loads the input, runs a real computation and
+    // screenshots the Output tab (for the demo/hand-over documentation).
+    for (int i = 1; i + 2 < argc; ++i) {
+        if (std::string(argv[i]) == "--demo") {
+            std::ifstream inFile(argv[i + 1]);
+            std::stringstream ss;
+            ss << inFile.rdbuf();
+            w.demoShot(QString::fromStdString(ss.str()),
+                       QString::fromLocal8Bit(argv[i + 2]));
+            return app.exec();
+        }
+    }
 
     // Hidden: `--shot <path>` renders the window to a PNG and exits.
     for (int i = 1; i + 1 < argc; ++i) {

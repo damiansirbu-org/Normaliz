@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(normaliz-gui CXX)
+project(normaliz-gui VERSION 0.6.1 LANGUAGES CXX)   # keep in sync with installer/*.nsi and CHANGELOG
 
 set(CMAKE_CXX_STANDARD 17)   # Qt 6 requires C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -46,7 +46,8 @@ add_executable(normaliz-gui WIN32 MACOSX_BUNDLE
 # the CoCoA headers, present in <repo>/local/include.
 target_compile_definitions(normaliz-gui PRIVATE
     NMZ_MAKEFILE_CLASSIC ENFNORMALIZ NMZ_FLINT
-    NMZ_COCOA NMZ_NAUTY NMZ_NAUTYNAUTY NMZ_NAUTY_TLS)
+    NMZ_COCOA NMZ_NAUTY NMZ_NAUTYNAUTY NMZ_NAUTY_TLS
+    NMZ_GUI_VERSION="${PROJECT_VERSION}")
 
 # <repo>/local/include first: it holds e-antic's headers and the pinned FLINT 3.0.1
 # headers, which must win over any newer system FLINT.

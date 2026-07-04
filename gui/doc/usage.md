@@ -31,6 +31,19 @@ computation runs in the background; the status bar shows Computing... then Ready
 Results appear in the Output area. On invalid input the status bar shows Error
 and the message is printed in Output (the app does not crash).
 
+## Headless / batch (scripting)
+
+Two hidden flags compute a file without opening a window, using the exact same
+worker as the Compute button - useful for scripting or comparing against the
+`normaliz` command line:
+
+    normaliz-gui --run <input.in> <output.txt>          # goals taken from the .in
+    normaliz-gui --rundefault <input.in> <output.txt>   # DefaultMode (like plain normaliz)
+
+The rendered result (the `.out` text plus any side files) is written to
+`<output.txt>`. On the same input the output is byte-identical to the
+`normaliz` CLI's `.out`.
+
 ## Build from source
 
 MSYS2 / MINGW64, packages:

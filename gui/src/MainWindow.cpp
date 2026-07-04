@@ -33,6 +33,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QComboBox>
+#include <QApplication>
 #include <QFont>
 #include <QPrinter>
 #include <QPrintDialog>
@@ -75,6 +76,10 @@
 #endif
 
 using namespace libnormaliz;
+
+#ifndef NMZ_GUI_VERSION
+#  define NMZ_GUI_VERSION "dev"
+#endif
 
 namespace {
 
@@ -486,7 +491,7 @@ void MainWindow::buildMenu() {
     helpMenu->addSeparator();
     helpMenu->addAction("&About", this, [this] {
         QMessageBox::about(this, "About Normaliz GUI",
-            "<b>Normaliz GUI</b><br>"
+            "<b>Normaliz GUI</b> version " NMZ_GUI_VERSION "<br>"
             "A desktop interface for Normaliz, built on libnormaliz.<br><br>"
             "Normaliz by W. Bruns, B. Ichim, Ch. Soeger, U. v. d. Ohe.<br>"
             "GPL v3.");
@@ -537,7 +542,19 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
 // New: ask for a matrix size and load a zero-filled cone template to edit,
 // mirroring jNormaliz's "New input" dialog.
+// Changing the input while the worker holds a copy and is about to fill the
+// output pane is a confusing workflow (jNormaliz disabled it too); refuse until
+// the run finishes or is stopped.
+bool MainWindow::busyGuard() {
+    if (watcher_.isRunning()) {
+        statusBar()->showMessage("A computation is running - stop it first.");
+        return true;
+    }
+    return false;
+}
+
 void MainWindow::newFile() {
+    if (busyGuard()) return;
     if (!maybeSave()) return;
     // Caps keep the generated template at a size the editor can handle; a
     // hand-edited skeleton beyond 500 x 5000 is not a realistic workflow.
@@ -561,6 +578,7 @@ void MainWindow::newFile() {
 }
 
 void MainWindow::openFile() {
+    if (busyGuard()) return;
     if (!maybeSave()) return;
     QString path = QFileDialog::getOpenFileName(this, "Open input", QString(),
                                                 "Normaliz input (*.in);;All files (*)");
@@ -600,6 +618,7 @@ void MainWindow::saveFileAs() {
 }
 
 void MainWindow::closeFile() {
+    if (busyGuard()) return;
     if (!maybeSave()) return;
     input_->clear();
     output_->clear();
@@ -772,6 +791,17 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
     return r;
 }
 
+// Headless entry point for the hidden `--run <in> <out>` flag. Runs the same
+// worker as the Compute button with default toolbar settings (goals come from
+// the .in text, like the CLI) and returns the rendered Output text.
+std::string MainWindow::runHeadless(const std::string& inputText, bool defaultMode) {
+    Goals g;
+    g.algo = 0; g.mode = defaultMode ? 1 : 0; g.prec = 0; g.threads = 0;
+    nmz_interrupted = 0;
+    Result r = runCompute(inputText, g);
+    return r.text;
+}
+
 void MainWindow::startCompute() {
     Goals g;
     for (int i = 0; i < (int)cbGoals_.size(); ++i)
@@ -802,11 +832,42 @@ void MainWindow::stopCompute() {
     statusBar()->showMessage("Stopping...");
 }
 
+// Demo/screenshot hook (hidden `--demo <in> <png>` in main.cpp): load the
+// input, run the real Compute path, and when it finishes switch to the Output
+// tab, save a screenshot and quit. Reuses startCompute/computeFinished so the
+// screenshot shows a genuine result, not a mock-up.
+void MainWindow::demoShot(const QString& inputText, const QString& pngPath) {
+    input_->setPlainText(inputText);
+    input_->document()->setModified(false);
+    updateTitle();
+    connect(&watcher_, &QFutureWatcher<Result>::finished, this, [this, pngPath]() {
+        tabs_->setCurrentWidget(output_);   // computeFinished already filled it
+        QTimer::singleShot(200, this, [this, pngPath]() {
+            grab().save(pngPath);
+            QApplication::quit();
+        });
+    });
+    QTimer::singleShot(300, this, &MainWindow::startCompute);
+}
+
 void MainWindow::computeFinished() {
     tick_->stop();
     elapsedLabel_->setText(QString("Elapsed: %1s").arg(elapsed_.elapsed() / 1000.0, 0, 'f', 1));
     const Result r = watcher_.result();
-    output_->setPlainText(QString::fromStdString(r.text));
+    // Guard against a pathologically large result freezing the UI: setPlainText
+    // on hundreds of MB blocks the event loop. Show a bounded head with a note
+    // (normal outputs are a few KB, so this never triggers in practice).
+    const size_t kMaxDisplay = 4 * 1024 * 1024;
+    if (r.text.size() > kMaxDisplay) {
+        QString msg = QString::fromStdString(r.text.substr(0, kMaxDisplay)) +
+            QString("\n\n[... output truncated for display: %1 of %2 characters shown; "
+                    "the full result is too large to render without freezing the window. "
+                    "Request fewer goals or run a specific property.]")
+                .arg(kMaxDisplay).arg(r.text.size());
+        output_->setPlainText(msg);
+    } else {
+        output_->setPlainText(QString::fromStdString(r.text));
+    }
     console_->setPlainText(QString::fromStdString(r.console));
     statusBar()->showMessage(r.ok ? "Ready" : (r.stopped ? "Stopped" : "Error"));
     compute_->setEnabled(true);

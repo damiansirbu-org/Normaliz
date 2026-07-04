@@ -5,7 +5,7 @@
 
 !define APPNAME    "Normaliz GUI"
 !define COMPANY    "Normaliz"
-!define VERSION    "0.6.0"
+!define VERSION    "0.6.1"
 !define EXENAME    "normaliz-gui.exe"
 !define PAYLOAD    "..\dist"
 !define UNINSTKEY  "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"

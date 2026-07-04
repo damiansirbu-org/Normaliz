@@ -27,6 +27,15 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget* parent = nullptr);
 
+    // Headless test/batch hook (hidden `--run <in> <out>` in main.cpp): parse
+    // `inputText`, compute the goals named in it, and return the rendered Output
+    // text - the exact worker path the Compute button uses, without a window.
+    static std::string runHeadless(const std::string& inputText, bool defaultMode = false);
+
+    // Demo/screenshot hook: load input, run the real Compute path, screenshot
+    // the Output tab and quit. Used by main.cpp's hidden --demo flag.
+    void demoShot(const QString& inputText, const QString& pngPath);
+
 protected:
     void closeEvent(QCloseEvent* event) override;
 
@@ -52,6 +61,7 @@ private:
     void buildMenu();
     void updateTitle();
     bool maybeSave();
+    bool busyGuard();   // true (and refuses) if a computation is running
 
     QPlainTextEdit* input_;
     QPlainTextEdit* output_;

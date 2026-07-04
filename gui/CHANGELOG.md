@@ -3,6 +3,30 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.6.1] - 2026-07-04
+
+Polish and testability pass before the hand-over, after verifying the 0.6.0
+release artifacts (CI green on all three platforms; the Windows installer
+installs, starts on a clean PATH and uninstalls cleanly) and running a
+GUI-vs-CLI parity matrix (GUI output byte-identical to `normaliz` on 11 inputs
+spanning rational / algebraic / integral / automorphism goals and the 0.6.0
+fixes).
+
+### Added
+- Hidden headless flags `--run <in> <out>` (goals from the .in) and
+  `--rundefault <in> <out>` (DefaultMode): compute a file through the exact
+  Compute-button worker path without a window, for automated GUI-vs-CLI parity
+  testing (the same idea as the existing `--shot`).
+- The About dialog shows the version (`NMZ_GUI_VERSION`, set from the CMake
+  project version, kept in sync with the installer).
+
+### Fixed
+- A pathologically large result no longer risks freezing the window: the Output
+  pane shows a bounded head with a note instead of pushing hundreds of MB
+  through `setPlainText` (normal outputs are unaffected).
+- New / Open / Close are refused while a computation is running (changing the
+  input under the worker was a confusing workflow; jNormaliz disabled it too).
+
 ## [0.6.0] - 2026-07-04
 
 Fixes from the full adversarial review (phd docs: Normaliz-GUI/review-report.md).
