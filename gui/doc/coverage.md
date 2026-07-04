@@ -58,7 +58,7 @@ Legend: [x] done, [~] partial, [ ] todo, [-] not applicable by design.
 | Ignore in-file options | [ ] | OptionsHandler flag |
 | Control parallel threads | [x] | Options tab spinbox (set_thread_limit) |
 | Font size | [x] | Options tab spinbox |
-| NmzIntegrate (Ehrhart series, quasipolynomial leading coeff, Lebesgue integral) | [ ] | needs NmzIntegrate / CoCoALib |
+| NmzIntegrate (Ehrhart series, quasipolynomial leading coeff, Lebesgue integral) | [x] | CoCoALib linked in-process; Integral / weighted Ehrhart series exposed as goals |
 
 ## Status line
 
@@ -84,7 +84,7 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 | Goal | Status | Notes |
 |---|---|---|
-22 goals are offered through a goal table (add a ConeProperty + a formatGoal case).
+25 goals are offered through a goal table (add a ConeProperty + a formatGoal case).
 
 | Hilbert basis, extreme rays, support hyperplanes | [x] | matrices |
 | Module generators, degree-1 elements, maximal subspace | [x] | matrices |
@@ -95,7 +95,7 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 | Is pointed / Gorenstein / deg-1 extreme rays | [x] | boolean tests |
 | Automorphism groups | [x] | nauty enabled; group order + generating permutations |
 | Algebraic polyhedra (renf) | [x] | e-antic; number_field input auto-dispatches to Cone<renf_elem_class> in the GUI and computes the geometric goals (volume, support hyperplanes, extreme rays, ...); verified on the dodecahedron over Q(sqrt5) |
-| Integrals / weighted Ehrhart | [ ] | still need CoCoALib (non-NAKED) |
+| Integrals / weighted Ehrhart | [x] | CoCoALib enabled; Integral / virtual multiplicity / weighted Ehrhart series goals (needs a polynomial in the input); verified integral of x1*x2*x3 over the standard simplex = 1/120 |
 
 ## Beyond jNormaliz (what jNormaliz did not cover)
 

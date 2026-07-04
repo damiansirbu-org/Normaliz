@@ -3,6 +3,21 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.4.0] - 2026-07-04
+
+CoCoALib (integrals / weighted Ehrhart) enabled - the last optional library.
+
+### Added
+- `libnormaliz` now built with NMZ_COCOA on top of nauty + e-antic. CoCoALib is
+  built statically into `<repo>/local` by `install_nmz_cocoa.sh` (the MSYS
+  prerelease + patches on Windows, 0.99818 elsewhere) and linked into the GUI - no
+  ABI define or headers needed, only the archive on the link line.
+- Three goals: Integral (of a polynomial), virtual multiplicity, weighted Ehrhart
+  series. They need a `polynomial` field in the input; the worker now applies it
+  via setPolyParams()/setNumericalParams(). Verified: the integral of x1*x2*x3
+  over the standard simplex is 1/120.
+- CI builds CoCoALib per platform (MSYS2 needs diffutils for CoCoA's header script).
+
 ## [0.3.0] - 2026-07-03
 
 e-antic (algebraic / real embedded number fields) enabled in the engine and build.

@@ -36,28 +36,31 @@ jobs:
             mingw-w64-x86_64-nsis
             mingw-w64-x86_64-nauty
             mingw-w64-x86_64-boost
+            diffutils
 
-      - name: Build FLINT 3.0.1 + e-antic (algebraic)
+      - name: Build FLINT 3.0.1 + e-antic + CoCoALib (algebraic / integrals)
         run: |
-          # Pinned FLINT 3.0.1 + e-antic 2.0.2 into <repo>/local (OPT_LIB_ROOT).
-          # FLINT uses the MSYS2 mpfr; e-antic links FLINT statically.
+          # Pinned FLINT 3.0.1 + e-antic 2.0.2 + CoCoALib into <repo>/local.
+          # FLINT uses the MSYS2 mpfr; e-antic and CoCoA link statically.
           # OSTYPE=msys is forced: the setup-msys2 shell does not set it, so
           # common.sh would otherwise add ELF-only LDFLAGS (--enable-new-dtags,
           # -rpath) that mingw ld rejects, and the scripts' msys branches
-          # (flint --with-mpfr=/mingw64, e-antic randtest rename + dep-tracking)
-          # would not apply.
+          # (flint --with-mpfr=/mingw64, e-antic randtest rename + dep-tracking,
+          # the CoCoA MSYS prerelease + patches) would not apply. CoCoA's
+          # MakeUnifiedHeader.sh needs cmp/diff -> diffutils.
           export OSTYPE=msys
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_flint.sh
           ./install_scripts_opt/install_nmz_e-antic.sh
+          ./install_scripts_opt/install_nmz_cocoa.sh
 
-      - name: Build libnormaliz.a (nauty + e-antic)
+      - name: Build libnormaliz.a (nauty + e-antic + CoCoA)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          # nauty + e-antic (ENFNORMALIZ) + FLINT on; cocoa / hash-library stay off.
-          mingw32-make -f Makefile.classic COCOA=no HASHLIBRARY=no -j$(nproc)
+          # nauty + e-antic (ENFNORMALIZ) + FLINT + CoCoA on; hash-library stays off.
+          mingw32-make -f Makefile.classic HASHLIBRARY=no -j$(nproc)
 
       - name: Build GUI
         run: |
@@ -109,20 +112,21 @@ jobs:
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
-      - name: Build MPFR + FLINT 3.0.1 + e-antic (algebraic)
+      - name: Build MPFR + FLINT 3.0.1 + e-antic + CoCoALib (algebraic / integrals)
         run: |
-          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 into <repo>/local.
-          # e-antic is linked statically into the GUI (visibility, not dllimport),
-          # so the AppImage needs no libeantic .so bundled.
+          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 + CoCoALib into
+          # <repo>/local. e-antic and CoCoA are linked statically into the GUI, so
+          # the AppImage needs no extra .so bundled.
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_eantic_with_prerequisites.sh
+          ./install_scripts_opt/install_nmz_cocoa.sh
 
-      - name: Build libnormaliz.a (nauty + e-antic)
+      - name: Build libnormaliz.a (nauty + e-antic + CoCoA)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
           cp ../install_scripts_opt/header_files_for_Makefile.classic/nmz_config.h libnormaliz/
-          make -f Makefile.classic COCOA=no HASHLIBRARY=no -j$(nproc)
+          make -f Makefile.classic HASHLIBRARY=no -j$(nproc)
 
       - name: Build GUI
         run: |
@@ -186,14 +190,16 @@ jobs:
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_nmz_nauty.sh
 
-      - name: Build MPFR + FLINT 3.0.1 + e-antic (algebraic)
+      - name: Build MPFR + FLINT 3.0.1 + e-antic + CoCoALib (algebraic / integrals)
         run: |
-          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 into <repo>/local;
-          # e-antic is linked statically into the GUI so the .dmg needs no dylib.
+          # Pinned mpfr 4.2.1 -> FLINT 3.0.1 -> e-antic 2.0.2 + CoCoALib into
+          # <repo>/local; e-antic and CoCoA are linked statically into the GUI so
+          # the .dmg needs no extra dylib.
           export NMZ_PREFIX="$PWD/local"
           ./install_scripts_opt/install_eantic_with_prerequisites.sh
+          ./install_scripts_opt/install_nmz_cocoa.sh
 
-      - name: Build libnormaliz.a (static, nauty + e-antic)
+      - name: Build libnormaliz.a (static, nauty + e-antic + CoCoA)
         run: |
           cd source
           cp ../install_scripts_opt/header_files_for_Makefile.classic/version.h libnormaliz/
@@ -201,8 +207,8 @@ jobs:
           # Build only the static archive (the 'lib' target). This avoids both the
           # -static executable link and the GNU-ld '-rpath=' flags of the shared
           # build, which Apple's ld rejects. OPENMP=no: Apple clang has no -fopenmp.
-          # nauty + e-antic (ENFNORMALIZ) + FLINT on; cocoa / hash stay off.
-          make -f Makefile.classic COCOA=no HASHLIBRARY=no OPENMP=no lib -j$(sysctl -n hw.ncpu)
+          # nauty + e-antic (ENFNORMALIZ) + FLINT + CoCoA on; hash stays off.
+          make -f Makefile.classic HASHLIBRARY=no OPENMP=no lib -j$(sysctl -n hw.ncpu)
 
       - name: Build GUI
         run: |

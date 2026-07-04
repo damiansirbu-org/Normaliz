@@ -129,6 +129,9 @@ const std::vector<GoalDef>& goalTable() {
         {ConeProperty::IsGorenstein,        "Is Gorenstein",         false},
         {ConeProperty::IsDeg1ExtremeRays,   "Deg-1 extreme rays",    false},
         {ConeProperty::Automorphisms,       "Automorphism group",    false},
+        {ConeProperty::Integral,            "Integral (of polynomial)", false},
+        {ConeProperty::VirtualMultiplicity, "Virtual multiplicity",  false},
+        {ConeProperty::WeightedEhrhartSeries, "Weighted Ehrhart series", false},
     };
     return t;
 }
@@ -179,6 +182,13 @@ std::string formatGoal(Cone<mpz_class>& cone, ConeProperty::Enum p) {
         case ConeProperty::IsPointed:           o << "pointed: " << (cone.isPointed() ? "yes" : "no") << "\n\n"; break;
         case ConeProperty::IsGorenstein:        o << "Gorenstein: " << (cone.isGorenstein() ? "yes" : "no") << "\n\n"; break;
         case ConeProperty::IsDeg1ExtremeRays:   o << "degree-1 extreme rays: " << (cone.isDeg1ExtremeRays() ? "yes" : "no") << "\n\n"; break;
+        case ConeProperty::Integral:
+            o << "integral: " << cone.getIntegral() << "\n";
+            o << "integral (Euclidean): " << cone.getEuclideanIntegral() << "\n\n"; break;
+        case ConeProperty::VirtualMultiplicity:
+            o << "virtual multiplicity: " << cone.getVirtualMultiplicity() << "\n\n"; break;
+        case ConeProperty::WeightedEhrhartSeries:
+            o << "weighted Ehrhart series:\n" << cone.getWeightedEhrhartSeries().first << "\n\n"; break;
         case ConeProperty::Automorphisms: {
             const AutomorphismGroup<mpz_class>& A = cone.getAutomorphismGroup();
             // libnormaliz:: qualifier: key_t is also a POSIX type (<sys/types.h>)
@@ -631,6 +641,10 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
                     if (gd.prop == p) { oss << gd.label << ": not available for algebraic input.\n"; break; }
         } else {
             Cone<mpz_class> cone(input);
+            // Apply an integrand polynomial / numerical parameters if the input
+            // declared them (needed for Integral, weighted Ehrhart via CoCoALib).
+            cone.setPolyParams(poly_param_input);
+            cone.setNumericalParams(num_param_input);
             if (selected.empty() && g.mode != 1)
                 selected.push_back(ConeProperty::HilbertBasis);
             ConeProperties props;

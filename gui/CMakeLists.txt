@@ -79,10 +79,14 @@ if(NOT WIN32)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ${_nmz_saved_suffixes})
 endif()
 find_library(MPFR_LIB     NAMES mpfr     PATHS "${CMAKE_PREFIX_PATH}/lib")
-if(NOT (EANTICXX_LIB AND EANTIC_LIB AND FLINT_LIB AND MPFR_LIB))
+# CoCoALib (integrals / weighted Ehrhart), built statically into <repo>/local by
+# install_nmz_cocoa.sh. No ABI define or headers needed here - libnormaliz.a just
+# references its symbols; only the static archive must be on the link line.
+find_library(COCOA_LIB    NAMES cocoa    PATHS "${NORMALIZ_SRC}/../local/lib" NO_DEFAULT_PATH)
+if(NOT (EANTICXX_LIB AND EANTIC_LIB AND FLINT_LIB AND MPFR_LIB AND COCOA_LIB))
     message(FATAL_ERROR
-        "e-antic / FLINT / MPFR not found. Build them into <repo>/local first: "
-        "install_scripts_opt/install_nmz_flint.sh + install_nmz_e-antic.sh.")
+        "e-antic / FLINT / MPFR / CoCoA not found. Build them into <repo>/local "
+        "first: install_nmz_flint.sh + install_nmz_e-antic.sh + install_nmz_cocoa.sh.")
 endif()
 
 target_link_libraries(normaliz-gui PRIVATE
@@ -93,6 +97,7 @@ target_link_libraries(normaliz-gui PRIVATE
     "${NAUTY_LIB}"
     "${EANTICXX_LIB}"
     "${EANTIC_LIB}"
+    "${COCOA_LIB}"
     "${FLINT_LIB}"
     "${MPFR_LIB}"
     gmpxx
