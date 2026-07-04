@@ -26,6 +26,10 @@ the roadmap toward a complete replacement.
 - Integrals / weighted Ehrhart (CoCoALib): with a `polynomial` field in the input,
   the integral, virtual multiplicity and weighted Ehrhart series goals compute
   in-process (no external NmzIntegrate binary).
+- Full engine access: besides the checkboxes, any ConeProperty can be requested by
+  typing its name in the `.in` editor (as the CLI allows), and the complete Normaliz
+  output is shown - the same text the CLI writes to `.out`, for every computed
+  property (triangulations, Stanley decomposition, quasi-polynomials, ...).
 - Edit menu (Undo/Redo/Cut/Copy/Paste/Select All) and Help menu (Normaliz
   website, manual, About).
 - Backend selector: Local (default, embedded) and Cloud (WIP, shown disabled) -

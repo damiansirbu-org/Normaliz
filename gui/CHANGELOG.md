@@ -3,6 +3,24 @@
 All notable changes to the Normaliz GUI are documented here.
 Format based on Keep a Changelog; versions track the GUI, not Normaliz.
 
+## [0.5.0] - 2026-07-04
+
+Full engine access: request any goal by name, see the complete Normaliz output.
+
+### Added
+- The `.in` editor now honors computation goals typed by name, exactly like the
+  CLI: `options.getToCompute()` is merged into the requested properties, so every
+  one of libnormaliz's ~150 ConeProperties (triangulations, Stanley decomposition,
+  quasi-polynomials, integer hull, automorphism variants, ...) is reachable without
+  a dedicated checkbox. The checkboxes remain a convenience subset.
+- Results are rendered with Normaliz's own Output writer - the same text as the
+  `.out` file - so every computed property is shown, not only the checkbox goals.
+  (Rendered via a temp file internally; the user's input still comes from the editor.)
+
+### Removed
+- The per-goal formatters (formatGoal / formatGoalRenf); the full-output renderer
+  supersedes them and covers all properties uniformly, including the algebraic path.
+
 ## [0.4.0] - 2026-07-04
 
 CoCoALib (integrals / weighted Ehrhart) enabled - the last optional library.

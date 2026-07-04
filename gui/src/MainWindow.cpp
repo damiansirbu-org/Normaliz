@@ -45,6 +45,7 @@
 
 #include "libnormaliz/cone.h"
 #include "libnormaliz/input.h"
+#include "libnormaliz/output.h"
 #include "libnormaliz/HilbertSeries.h"
 #include "libnormaliz/normaliz_exception.h"
 #include "libnormaliz/general.h"
@@ -101,9 +102,11 @@ QString processMemoryText() {
 #endif
 }
 
-// The computation goals offered in the UI. Each maps a checkbox to a
-// ConeProperty; the worker sets them on compute() and formatGoal() prints the
-// result. Add a goal here and add a case in formatGoal(); nothing else changes.
+// The computation goals offered as checkboxes in the UI. Each maps a checkbox to
+// a ConeProperty; the worker adds them to compute(). This is a convenience subset
+// - any ConeProperty can also be requested by typing its name in the .in editor.
+// Results are rendered in full by renderFullOutput(), so no per-goal formatter is
+// needed; add a row here only to surface a goal as a checkbox.
 struct GoalDef { ConeProperty::Enum prop; const char* label; bool byDefault; };
 const std::vector<GoalDef>& goalTable() {
     static const std::vector<GoalDef> t = {
@@ -136,78 +139,6 @@ const std::vector<GoalDef>& goalTable() {
     return t;
 }
 
-// Templated on the coefficient type so both the integer (mpz_class) and the
-// algebraic (renf_elem_class) result matrices/vectors print through one path;
-// renf_elem_class provides operator<< (prints e.g. "(a - 1)").
-template <class T>
-void dumpMatrix(std::ostream& o, const char* title, const std::vector<std::vector<T> >& m) {
-    o << m.size() << " " << title << ":\n";
-    for (const std::vector<T>& v : m) {
-        for (const T& x : v) o << x << " ";
-        o << "\n";
-    }
-    o << "\n";
-}
-
-template <class T>
-void dumpVector(std::ostream& o, const char* title, const std::vector<T>& v) {
-    o << title << ":";
-    for (const T& x : v) o << " " << x;
-    o << "\n\n";
-}
-
-// Format a computed goal. Called only for goals that were requested and thus
-// computed, so the getters do not throw.
-std::string formatGoal(Cone<mpz_class>& cone, ConeProperty::Enum p) {
-    std::ostringstream o;
-    switch (p) {
-        case ConeProperty::HilbertBasis:        dumpMatrix(o, "Hilbert basis elements", cone.getHilbertBasis()); break;
-        case ConeProperty::ExtremeRays:         dumpMatrix(o, "extreme rays", cone.getExtremeRays()); break;
-        case ConeProperty::SupportHyperplanes:  dumpMatrix(o, "support hyperplanes", cone.getSupportHyperplanes()); break;
-        case ConeProperty::ModuleGenerators:    dumpMatrix(o, "module generators", cone.getModuleGenerators()); break;
-        case ConeProperty::Deg1Elements:        dumpMatrix(o, "degree 1 elements", cone.getDeg1Elements()); break;
-        case ConeProperty::MaximalSubspace:     dumpMatrix(o, "maximal subspace generators", cone.getMaximalSubspace()); break;
-        case ConeProperty::HilbertSeries:       o << "Hilbert series:\n" << cone.getHilbertSeries() << "\n\n"; break;
-        case ConeProperty::EhrhartSeries:       o << "Ehrhart series:\n" << cone.getEhrhartSeries() << "\n\n"; break;
-        case ConeProperty::Multiplicity:        o << "multiplicity: " << cone.getMultiplicity() << "\n\n"; break;
-        case ConeProperty::Volume:              o << "volume: " << cone.getVolume() << "\n\n"; break;
-        case ConeProperty::NumberLatticePoints: o << "number of lattice points: " << cone.getNumberLatticePoints() << "\n\n"; break;
-        case ConeProperty::TriangulationSize:   o << "triangulation size: " << cone.getTriangulationSize() << "\n\n"; break;
-        case ConeProperty::ClassGroup:          dumpVector(o, "class group", cone.getClassGroup()); break;
-        case ConeProperty::Grading:             dumpVector(o, "grading", cone.getGrading()); break;
-        case ConeProperty::Dehomogenization:    dumpVector(o, "dehomogenization", cone.getDehomogenization()); break;
-        case ConeProperty::Rank:                o << "rank: " << cone.getRank() << "\n\n"; break;
-        case ConeProperty::EmbeddingDim:        o << "embedding dimension: " << cone.getEmbeddingDim() << "\n\n"; break;
-        case ConeProperty::RecessionRank:       o << "recession rank: " << cone.getRecessionRank() << "\n\n"; break;
-        case ConeProperty::IsPointed:           o << "pointed: " << (cone.isPointed() ? "yes" : "no") << "\n\n"; break;
-        case ConeProperty::IsGorenstein:        o << "Gorenstein: " << (cone.isGorenstein() ? "yes" : "no") << "\n\n"; break;
-        case ConeProperty::IsDeg1ExtremeRays:   o << "degree-1 extreme rays: " << (cone.isDeg1ExtremeRays() ? "yes" : "no") << "\n\n"; break;
-        case ConeProperty::Integral:
-            o << "integral: " << cone.getIntegral() << "\n";
-            o << "integral (Euclidean): " << cone.getEuclideanIntegral() << "\n\n"; break;
-        case ConeProperty::VirtualMultiplicity:
-            o << "virtual multiplicity: " << cone.getVirtualMultiplicity() << "\n\n"; break;
-        case ConeProperty::WeightedEhrhartSeries:
-            o << "weighted Ehrhart series:\n" << cone.getWeightedEhrhartSeries().first << "\n\n"; break;
-        case ConeProperty::Automorphisms: {
-            const AutomorphismGroup<mpz_class>& A = cone.getAutomorphismGroup();
-            // libnormaliz:: qualifier: key_t is also a POSIX type (<sys/types.h>)
-            // on Linux/macOS, so unqualified it is ambiguous under using-namespace.
-            const std::vector<std::vector<libnormaliz::key_t> >& perms = A.getGensPerms();
-            o << "automorphism group order: " << A.getOrder() << "\n";
-            o << perms.size() << " generating permutation(s) of the extreme rays:\n";
-            for (const std::vector<libnormaliz::key_t>& perm : perms) {
-                for (libnormaliz::key_t x : perm) o << x << " ";
-                o << "\n";
-            }
-            o << "\n";
-            break;
-        }
-        default:                                o << "computed.\n\n"; break;
-    }
-    return o.str();
-}
-
 // Algebraic (real embedded number field) input runs on Cone<renf_elem_class>.
 // Only the geometric goals apply; the lattice / series goals (Hilbert basis and
 // series, Ehrhart, multiplicity, class group, degree-1, Gorenstein, ...) do not.
@@ -230,25 +161,28 @@ bool renfApplicable(ConeProperty::Enum p) {
     }
 }
 
-std::string formatGoalRenf(Cone<renf_elem_class>& cone, ConeProperty::Enum p) {
-    std::ostringstream o;
-    switch (p) {
-        case ConeProperty::ExtremeRays:         dumpMatrix(o, "extreme rays", cone.getExtremeRays()); break;
-        case ConeProperty::SupportHyperplanes:  dumpMatrix(o, "support hyperplanes", cone.getSupportHyperplanes()); break;
-        case ConeProperty::MaximalSubspace:     dumpMatrix(o, "maximal subspace generators", cone.getMaximalSubspace()); break;
-        case ConeProperty::Volume:
-            o << "volume (algebraic): " << cone.getRenfVolume() << "\n";
-            o << "volume (Euclidean): " << cone.getEuclideanVolume() << "\n\n"; break;
-        case ConeProperty::NumberLatticePoints: o << "number of lattice points: " << cone.getNumberLatticePoints() << "\n\n"; break;
-        case ConeProperty::TriangulationSize:   o << "triangulation size: " << cone.getTriangulationSize() << "\n\n"; break;
-        case ConeProperty::Dehomogenization:    dumpVector(o, "dehomogenization", cone.getDehomogenization()); break;
-        case ConeProperty::Rank:                o << "rank: " << cone.getRank() << "\n\n"; break;
-        case ConeProperty::EmbeddingDim:        o << "embedding dimension: " << cone.getEmbeddingDim() << "\n\n"; break;
-        case ConeProperty::RecessionRank:       o << "recession rank: " << cone.getRecessionRank() << "\n\n"; break;
-        case ConeProperty::IsPointed:           o << "pointed: " << (cone.isPointed() ? "yes" : "no") << "\n\n"; break;
-        default:                                o << "computed.\n\n"; break;
-    }
-    return o.str();
+// Render the complete Normaliz result the same way the CLI writes the .out file,
+// so every computed property shows (not just the goals with a formatGoal case).
+// Output only writes to a file, so use a temp path and read it back; the user
+// never sees a file (input still comes from the editor).
+template <class Integer>
+std::string renderFullOutput(Cone<Integer>& cone, renf_class_shared nf) {
+    const char* td = std::getenv("TEMP");
+    if (!td) td = std::getenv("TMP");
+    std::string base = std::string(td ? td : ".") + "/normaliz-gui-render";
+    std::string outfile = base + ".out";
+    Output<Integer> Out;
+    Out.set_name(base);
+    Out.set_write_out(true);
+    Out.set_renf(nf);            // no-op when nf is null (rational input)
+    Out.setCone(cone);
+    Out.write_files();
+    std::ifstream f(outfile.c_str());
+    std::stringstream ss;
+    ss << f.rdbuf();
+    f.close();
+    std::remove(outfile.c_str());
+    return ss.str();
 }
 
 }  // namespace
@@ -613,18 +547,27 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
 
         std::ostringstream oss;
 
-        if (algebraic) {
-            // Algebraic polyhedron: only the geometric goals apply; note the rest.
-            std::vector<ConeProperty::Enum> applicable, skipped;
-            for (ConeProperty::Enum p : selected)
-                (renfApplicable(p) ? applicable : skipped).push_back(p);
-            if (applicable.empty() && g.mode != 1)
-                applicable.push_back(ConeProperty::SupportHyperplanes);
+        // Everything the user asked for: the ticked goals plus any goal names
+        // typed directly in the .in editor (options.getToCompute()) - the same
+        // console-style access the CLI gives, so every ConeProperty is reachable
+        // by name without a checkbox for each. The result is rendered with
+        // Normaliz's own Output writer, so all computed properties are shown.
+        ConeProperties requested;
+        for (ConeProperty::Enum p : selected) requested.set(p);
+        requested.set(options.getToCompute());
 
+        if (algebraic) {
             Cone<renf_elem_class> cone(renf_input);
             cone.setRenf(number_field);
+            // Only the geometric goals apply to a real embedded number field.
             ConeProperties props;
-            for (ConeProperty::Enum p : applicable) props.set(p);
+            int skipped = 0;
+            for (size_t i = 0; i < ConeProperty::EnumSize; ++i) {
+                ConeProperty::Enum e = static_cast<ConeProperty::Enum>(i);
+                if (!requested.test(e)) continue;
+                if (renfApplicable(e)) props.set(e); else ++skipped;
+            }
+            if (!props.any() && g.mode != 1) props.set(ConeProperty::SupportHyperplanes);
             if (g.algo == 1)      props.set(ConeProperty::PrimalMode);
             else if (g.algo == 2) props.set(ConeProperty::DualMode);
             if (g.mode == 1) props.set(ConeProperty::DefaultMode);
@@ -633,22 +576,18 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
                 VerboseCapture vc(vlog);
                 cone.compute(props);
             }
-            oss << "Algebraic input (real embedded number field).\n\n";
-            for (ConeProperty::Enum p : applicable)
-                oss << formatGoalRenf(cone, p);
-            for (ConeProperty::Enum p : skipped)
-                for (const GoalDef& gd : tbl)
-                    if (gd.prop == p) { oss << gd.label << ": not available for algebraic input.\n"; break; }
+            oss << renderFullOutput(cone, number_field);
+            if (skipped > 0)
+                oss << "\n(" << skipped << " requested goal(s) not applicable to "
+                       "algebraic input were skipped.)\n";
         } else {
             Cone<mpz_class> cone(input);
-            // Apply an integrand polynomial / numerical parameters if the input
-            // declared them (needed for Integral, weighted Ehrhart via CoCoALib).
+            // An integrand polynomial / numerical parameters, if the input declared
+            // them (needed for Integral, weighted Ehrhart via CoCoALib).
             cone.setPolyParams(poly_param_input);
             cone.setNumericalParams(num_param_input);
-            if (selected.empty() && g.mode != 1)
-                selected.push_back(ConeProperty::HilbertBasis);
-            ConeProperties props;
-            for (ConeProperty::Enum p : selected) props.set(p);
+            ConeProperties props = requested;
+            if (!props.any() && g.mode != 1) props.set(ConeProperty::HilbertBasis);
             if (g.algo == 1)      props.set(ConeProperty::PrimalMode);
             else if (g.algo == 2) props.set(ConeProperty::DualMode);
             if (g.mode == 1) props.set(ConeProperty::DefaultMode);
@@ -658,8 +597,7 @@ MainWindow::Result MainWindow::runCompute(std::string inputText, Goals g) {
                 VerboseCapture vc(vlog);   // capture verbose output for the Console tab
                 cone.compute(props);
             }
-            for (ConeProperty::Enum p : selected)
-                oss << formatGoal(cone, p);
+            oss << renderFullOutput(cone, nullptr);
         }
 
         r.ok = true;

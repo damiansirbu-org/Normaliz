@@ -84,7 +84,9 @@ jNormaliz drives these through the mode box; we expose them as checkboxes.
 
 | Goal | Status | Notes |
 |---|---|---|
-25 goals are offered through a goal table (add a ConeProperty + a formatGoal case).
+25 goals are offered as checkboxes (a convenience subset). Any of libnormaliz's
+~150 ConeProperties can also be requested by typing its name in the .in editor,
+exactly like the CLI; the full Normaliz output (all computed properties) is shown.
 
 | Hilbert basis, extreme rays, support hyperplanes | [x] | matrices |
 | Module generators, degree-1 elements, maximal subspace | [x] | matrices |
