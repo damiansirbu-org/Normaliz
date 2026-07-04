@@ -32,7 +32,6 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-gmp
             mingw-w64-x86_64-mpfr
-            mingw-w64-x86_64-flint
             mingw-w64-x86_64-qt6-base
             mingw-w64-x86_64-nsis
             mingw-w64-x86_64-nauty
@@ -180,9 +179,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt gmp mpfr flint boost cmake ninja
+          brew install qt gmp mpfr boost cmake ninja
           # Homebrew (Apple Silicon: /opt/homebrew) is not on the default compiler
-          # search path; expose its headers/libs (gmp, mpfr, flint, boost) to all steps.
+          # search path; expose its headers/libs (gmp, mpfr, boost) to all steps.
+          # FLINT is NOT brewed on purpose: the pinned FLINT 3.0.1 is built into
+          # <repo>/local; a system FLINT (3.5) on the global include path would
+          # shadow it and break e-antic 2.0.2 (relied only on -I order before).
           echo "CPATH=$(brew --prefix)/include" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
